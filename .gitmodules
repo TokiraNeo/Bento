@@ -1,0 +1,3 @@
+[submodule "BentoDocs"]
+	path = BentoDocs
+	url = https://github.com/TokiraNeo/BentoDocs.git
