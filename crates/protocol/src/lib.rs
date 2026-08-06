@@ -4,6 +4,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-pub mod error;
-pub mod host_session;
-pub mod host_server;
+pub mod jsonrpc;
+pub mod tool;
+pub mod host;
+pub mod commands;
+pub mod dispatch;
+pub mod env;
+pub mod event;

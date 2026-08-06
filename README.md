@@ -4,6 +4,11 @@
 Place different tools in the compartments; open whichever one you need to search through it.
 ```
 
-Create a `relay station` for agents on the market and any tool hosts (DCC and any hosts capable of exposing tools).
+---
+
+
+a tool-relay hub for AI agents and tool hosts: any host that can expose tools (DCCs and beyond) 
+connects with a thin plugin, and market agents(Codex/OpenCode/Cursor) plug in over MCP with zero adaptation.
+
 
 ---
