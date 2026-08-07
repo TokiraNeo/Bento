@@ -1,5 +1,5 @@
 [package]
-name = "bento_core"
+name = "bento_host_server"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,6 +10,7 @@ description.workspace = true
 repository.workspace = true
 
 [dependencies]
-bento_host_server = { path = "../host_server" }
-bento_agent_server = { path = "../agent_server" }
+bento_protocol = { path = "../protocol" }
 serde = { version = "1.0.229", features = ["derive"] }
+tokio = {version = "1.53.1", features = ["rt-multi-thread", "sync", "macros"]}
+tokio-tungstenite = "0.30.0"

@@ -5,8 +5,6 @@
  */
 
 use serde::{Deserialize, Serialize};
-use std::sync::mpsc;
-use bento_protocol::dispatch::OutboundFrame;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HostRuntimeIdentity {
@@ -33,5 +31,4 @@ pub struct HostSession {
     pub namespace: String,
     pub identity: HostRuntimeIdentity,
     pub state: HostSessionState,
-    pub tx: mpsc::Sender<OutboundFrame>
 }

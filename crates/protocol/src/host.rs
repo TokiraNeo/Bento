@@ -7,7 +7,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-
 /// Host -> Bento
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

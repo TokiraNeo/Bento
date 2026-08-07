@@ -1,5 +1,5 @@
 [package]
-name = "bento_core"
+name = "bento_agent_server"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,6 +10,4 @@ description.workspace = true
 repository.workspace = true
 
 [dependencies]
-bento_host_server = { path = "../host_server" }
-bento_agent_server = { path = "../agent_server" }
 serde = { version = "1.0.229", features = ["derive"] }

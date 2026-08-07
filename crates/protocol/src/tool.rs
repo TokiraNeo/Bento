@@ -9,9 +9,15 @@ use serde_json::Value;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum ToolRisk { Low, Medium, High }
+pub enum ToolRisk {
+    Low,
+    Medium,
+    High,
+}
 
-fn default_risk() -> ToolRisk { ToolRisk::Medium }
+fn default_risk() -> ToolRisk {
+    ToolRisk::Medium
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolDefinition {
@@ -38,7 +44,7 @@ pub struct ToolDefinition {
     pub tags: Vec<String>,
 
     #[serde(default)]
-    pub example: Option<String>
+    pub example: Option<String>,
 }
 
 impl ToolDefinition {
