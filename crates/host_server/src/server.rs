@@ -13,6 +13,24 @@ use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
 use tokio::sync::{broadcast, watch};
 
+/// ```
+/// 宿主                                Hub
+/// │                                     │
+/// │──── WS connect ───────────────────► │  [Connecting]
+/// │                                     │
+/// │──── host.hello (request) ─────────► │  认证
+/// │◄─── host.welcome (response) ─────── │  分配 namespace  [Helloed]
+/// │                                     │
+/// │──── tools.register (request) ─────► │  宿主主动注册
+/// │◄─── tools.registered (response) ─── │  确认  [Registered]
+/// │                                     │
+/// │──── host.ready (notification) ─────►│  [Ready]
+/// │                                     │
+/// │◄─── tool.call (request) ─────────── │  Hub 下发调用（就绪后）
+/// │──── tool.result (response) ────────►│
+/// │                                     │
+/// │──── WS disconnect ────────────────► │  [Closed]
+/// ```
 pub struct HostServer {
     config: HostServerConfig,
 
@@ -49,13 +67,20 @@ impl HostServer {
             .await
             .map_err(|err| err.to_string())?;
 
+        let clone_token = self.config.token.clone();
         let clone_bus = self.bus.clone();
         let clone_registry = self.registry.clone();
         let shutdown_signal = self.shutdown_receiver.clone();
 
         tokio::spawn(async move {
-            connection::listen_connection(listener, clone_bus, clone_registry, shutdown_signal)
-                .await;
+            connection::listen_connection(
+                listener,
+                clone_token,
+                clone_bus,
+                clone_registry,
+                shutdown_signal,
+            )
+            .await;
         });
 
         Ok(())

@@ -15,7 +15,7 @@ pub(super) struct HostRuntimeIdentity {
     pub host_version: String,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 pub(super) enum HostSessionState {
     /// 已建立 TCP,尚未收到合法 host.hello
     #[default]

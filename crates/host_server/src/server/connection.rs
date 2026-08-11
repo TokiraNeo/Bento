@@ -8,18 +8,29 @@ use crate::{
     event::{HostEvent, HostEventBus, HostHandler, HostHandlerRegistry},
     session::{HostSession, HostSessionState},
 };
-use bento_protocol::dispatch::{InboundFrame, OutboundFrame, parse_inbound_frame};
-use bento_protocol::jsonrpc::JsonRpcResponse;
+use bento_protocol::{
+    commands::{host_command, tool_command},
+    dispatch::{InboundFrame, OutboundFrame, parse_inbound_frame},
+    jsonrpc::JsonRpcResponse,
+};
 use futures_util::{SinkExt, StreamExt};
 use tokio::{
     net::{TcpListener, TcpStream},
     sync::{mpsc, watch},
 };
-use tokio_tungstenite::{WebSocketStream, accept_async, tungstenite::Message};
+use tokio_tungstenite::{
+    WebSocketStream, accept_hdr_async,
+    tungstenite::http::StatusCode,
+    tungstenite::{
+        Message,
+        handshake::server::{ErrorResponse, Request, Response},
+    },
+};
 use uuid::Uuid;
 
 pub(super) async fn listen_connection(
     listener: TcpListener,
+    token: String,
     bus: HostEventBus,
     registry: HostHandlerRegistry,
     mut shutdown_signal: watch::Receiver<bool>,
@@ -33,12 +44,12 @@ pub(super) async fn listen_connection(
             accepted = listener.accept() => {
                 match accepted {
                     Ok((tcp, _)) => {
-                        let session_id = Uuid::new_v4().to_string();
+                        let clone_token = token.clone();
                         let clone_bus = bus.clone();
                         let clone_registry = registry.clone();
 
                         tokio::spawn(async move {
-                            handle_connection(tcp, session_id, clone_bus, clone_registry).await;
+                            handle_connection(tcp, clone_token, clone_bus, clone_registry).await;
                         });
                     }
 
@@ -51,16 +62,41 @@ pub(super) async fn listen_connection(
 
 async fn handle_connection(
     tcp: TcpStream,
-    session_id: String,
+    token: String,
     bus: HostEventBus,
     registry: HostHandlerRegistry,
 ) {
-    let ws: WebSocketStream<TcpStream> = match accept_async(tcp).await {
+    let ws: WebSocketStream<TcpStream> = match accept_hdr_async(
+        tcp,
+        |request: &Request, response: Response| -> Result<Response, ErrorResponse> {
+            let got_token = request
+                .headers()
+                .get("authorization")
+                .and_then(|v| v.to_str().ok())
+                .and_then(|v| v.strip_prefix("Bearer "))
+                .map(str::trim)
+                .unwrap_or_default();
+
+            if !token.is_empty() && got_token == token {
+                Ok(response)
+            } else {
+                Err(Response::builder()
+                    .status(StatusCode::UNAUTHORIZED)
+                    .body(Some("unauthorized".to_string()))
+                    .unwrap())
+            }
+        },
+    )
+    .await
+    {
         Ok(ws) => ws,
         Err(_) => {
-            todo!("Log Error here.");
+            todo!("Log Info here.");
+            return;
         }
     };
+
+    let session_id = Uuid::new_v4().to_string();
 
     let (mut writer, mut reader) = ws.split();
 
@@ -138,7 +174,22 @@ async fn handle_message(session: &mut HostSession, msg: Message, bus: &HostEvent
 
 async fn handle_inbound_frame(frame: InboundFrame, session: &mut HostSession, bus: &HostEventBus) {
     match frame {
-        InboundFrame::Request(request) => {}
-        InboundFrame::Notification(notification) => {}
+        InboundFrame::Request(request) => {
+            let method = request.method.as_str();
+
+            match (session.state, method) {
+                (HostSessionState::Connecting, host_command::HOST_HELLO) => {}
+                (HostSessionState::Helloed, tool_command::TOOLS_REGISTER) => {}
+                _ => {}
+            }
+        }
+        InboundFrame::Notification(notification) => {
+            let method = notification.method.as_str();
+
+            match (session.state, method) {
+                (HostSessionState::Registered, host_command::HOST_READY) => {}
+                _ => {}
+            }
+        }
     }
 }
