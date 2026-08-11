@@ -7,6 +7,11 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+/// ```json
+/// {
+///   "payload": {}
+/// }
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EnvReport {
     #[serde(default)]

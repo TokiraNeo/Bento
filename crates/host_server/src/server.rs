@@ -4,27 +4,86 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use std::collections::HashMap;
-use crate::session::HostSession;
-use crate::event::{HostEvent, HostHandle};
-use tokio::sync::mpsc;
+mod connection;
+
 use crate::config::HostServerConfig;
+use crate::event::{HostEvent, HostEventBus, HostHandlerRegistry};
+use bento_protocol::dispatch::OutboundFrame;
+use std::sync::{Arc, Mutex};
+use tokio::net::TcpListener;
+use tokio::sync::{broadcast, watch};
 
 pub struct HostServer {
-    hosts: HashMap<String, HostSession>,
+    config: HostServerConfig,
 
-    pub events: mpsc::Receiver<HostEvent>,
-    pub handle: HostHandle,
+    /// A map of session_id to HostHandler
+    registry: HostHandlerRegistry,
+
+    /// Event bus for host events
+    bus: HostEventBus,
+
+    /// Shut down signal for worker
+    shutdown_sender: watch::Sender<bool>,
+    shutdown_receiver: watch::Receiver<bool>,
 }
 
 impl HostServer {
     pub fn new(config: HostServerConfig) -> Self {
-        let (tx, rx) = mpsc::channel(config.buffer_size);
+        let (sender, receiver) = watch::channel(false);
 
-        HostServer {
-            hosts: HashMap::new(),
-            events: rx,
-            handle: HostHandle {},
+        Self {
+            config,
+            registry: Arc::new(Mutex::default()),
+            bus: HostEventBus::new(),
+            shutdown_sender: sender,
+            shutdown_receiver: receiver,
         }
+    }
+
+    pub fn subcribe(&self) -> broadcast::Receiver<HostEvent> {
+        self.bus.subscribe()
+    }
+
+    pub async fn run(&self) -> Result<(), String> {
+        let listener = TcpListener::bind((self.config.host.as_str(), self.config.port))
+            .await
+            .map_err(|err| err.to_string())?;
+
+        let clone_bus = self.bus.clone();
+        let clone_registry = self.registry.clone();
+        let shutdown_signal = self.shutdown_receiver.clone();
+
+        tokio::spawn(async move {
+            connection::listen_connection(listener, clone_bus, clone_registry, shutdown_signal)
+                .await;
+        });
+
+        Ok(())
+    }
+
+    pub fn stop(&self) -> Result<(), String> {
+        self.shutdown_sender
+            .send(true)
+            .map_err(|err| err.to_string())?;
+
+        Ok(())
+    }
+
+    pub async fn send_to_host(
+        &self,
+        session_id: String,
+        frame: OutboundFrame,
+    ) -> Result<(), String> {
+        let map = self.registry.lock().unwrap();
+
+        let handler = map.get(&session_id).clone();
+
+        if let None = handler {
+            return Err("Session Handler not found.".into());
+        }
+
+        handler.unwrap().send(frame).await;
+
+        Ok(())
     }
 }

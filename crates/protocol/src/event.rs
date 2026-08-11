@@ -7,6 +7,12 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+/// ```json
+/// {
+///   "event": "event_name",
+///   "payload": {}
+/// }
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventPushRequest {
     pub event: String,

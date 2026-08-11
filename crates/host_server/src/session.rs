@@ -4,17 +4,21 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use bento_protocol::tool::ToolDefinition;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HostRuntimeIdentity {
+use crate::event::HostHandler;
+
+#[derive(Default, Clone, Serialize, Deserialize)]
+pub(super) struct HostRuntimeIdentity {
     pub host_name: String,
     pub host_version: String,
-    pub host_id: String,
 }
 
-pub enum HostSessionState {
+#[derive(Default)]
+pub(super) enum HostSessionState {
     /// 已建立 TCP,尚未收到合法 host.hello
+    #[default]
     Connecting,
     /// hello 通过,已分配 session_id / namespace
     Helloed,
@@ -26,9 +30,24 @@ pub enum HostSessionState {
     Closed,
 }
 
-pub struct HostSession {
+pub(super) struct HostSession {
     pub session_id: String,
+    pub state: HostSessionState,
+    pub handler: HostHandler,
     pub namespace: String,
     pub identity: HostRuntimeIdentity,
-    pub state: HostSessionState,
+    pub tools: Vec<ToolDefinition>,
+}
+
+impl HostSession {
+    pub fn new(session_id: String, handler: HostHandler) -> Self {
+        Self {
+            session_id,
+            state: HostSessionState::Connecting,
+            handler,
+            namespace: String::new(),
+            identity: HostRuntimeIdentity::default(),
+            tools: Vec::new(),
+        }
+    }
 }

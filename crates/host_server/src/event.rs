@@ -4,26 +4,71 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use crate::session::HostRuntimeIdentity;
-use bento_protocol::tool::{ToolCallResult, ToolDefinition};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
-pub enum HostEvent {
-Connected {
-    namespace: String,
-    session_id: String,
-    identity: HostRuntimeIdentity,
-},
-Disconnected {
-    namespace: String,
-},
-ToolsRegistered {
-    namespace: String,
-    tools: Vec<ToolDefinition>,
-},
-Ready {
-    namespace: String,
-},
-ToolResult(ToolCallResult),
+use bento_protocol::dispatch::OutboundFrame;
+use tokio::sync::{broadcast, mpsc};
+use tokio_tungstenite::tungstenite::Message;
+
+#[derive(Clone)]
+pub(super) struct HostHandler(pub mpsc::Sender<Message>);
+
+impl HostHandler {
+    pub async fn send(&self, frame: OutboundFrame) {
+        let msg = Message::Text(serde_json::to_string(&frame).unwrap_or_default().into());
+        let _ = self.0.send(msg).await;
+    }
+
+    pub async fn send_pong(&self, payload: tokio_tungstenite::tungstenite::Bytes) {
+        let _ = self.0.send(Message::Pong(payload)).await;
+    }
 }
 
-pub struct HostHandle {}
+type HostHandlerMap = HashMap<String, HostHandler>;
+
+pub(super) type HostHandlerRegistry = Arc<Mutex<HostHandlerMap>>;
+
+#[derive(Clone)]
+pub enum HostEvent {
+    HostConnected {
+        session_id: String,
+    },
+    HostHelloed {
+        session_id: String,
+        namespace: String,
+    },
+    HostRegistered {
+        session_id: String,
+        tool_count: usize,
+    },
+    HostReady {
+        session_id: String,
+    },
+    HostClosed {
+        session_id: String,
+    },
+}
+
+#[derive(Clone)]
+pub(super) struct HostEventBus {
+    sender: broadcast::Sender<HostEvent>,
+}
+
+impl HostEventBus {
+    pub fn new() -> Self {
+        let (sender, _receiver) = broadcast::channel(256);
+
+        Self { sender }
+    }
+
+    pub fn subscribe(&self) -> broadcast::Receiver<HostEvent> {
+        self.sender.subscribe()
+    }
+
+    pub fn emit(&self, event: HostEvent) {
+        let _ = self.sender.send(event);
+    }
+}

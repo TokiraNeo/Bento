@@ -11,16 +11,14 @@ pub struct HostServerConfig {
     pub host: String,
     pub port: u16,
     pub token: String,
-    pub buffer_size: usize,
 }
 
 impl Default for HostServerConfig {
     fn default() -> Self {
         Self {
-            host: "".into(),
+            host: "127.0.0.1".into(),
             port: 2483,
             token: "".into(),
-            buffer_size: 256,
         }
     }
 }

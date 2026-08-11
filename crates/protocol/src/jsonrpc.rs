@@ -60,3 +60,23 @@ pub struct JsonRpcResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<JsonRpcError>,
 }
+
+impl JsonRpcResponse {
+    pub fn new_result(id: String, result: Value) -> Self {
+        Self {
+            jsonrpc: "2.0".into(),
+            id,
+            result: Some(result),
+            error: None,
+        }
+    }
+
+    pub fn new_error(id: String, error: JsonRpcError) -> Self {
+        Self {
+            jsonrpc: "2.0".into(),
+            id,
+            result: None,
+            error: Some(error),
+        }
+    }
+}

@@ -19,6 +19,22 @@ fn default_risk() -> ToolRisk {
     ToolRisk::Medium
 }
 
+/// ```json
+/// {
+///   "name": "my_tool",
+///   "description": "...",
+///   "input_schema": {
+///     "type": "object",
+///     "properties": {
+///       "...": { "type": "...", "description": "..."}
+///     }
+///   },
+///   "risk": "medium",
+///   "domain": "Modeling",
+///   "tags": ["tag1", "tag2"],
+///   "example": "my_tool(...)"
+/// }
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolDefinition {
     pub name: String,
@@ -65,11 +81,24 @@ impl ToolDefinition {
     }
 }
 
+/// ```json
+/// {
+///   "tools": [
+///     {"name": "...", "description": "...", "input_schema": {...}, "risk": "medium", "domain": "...", "tags": ["..."], "example": "..."},
+///   ]
+/// }
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolRegisterRequest {
     pub tools: Vec<ToolDefinition>,
 }
 
+/// ```json
+/// {
+///   "count": 1,
+///   "error": "..."
+/// }
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolRegisterResponse {
     pub count: usize,
@@ -77,6 +106,13 @@ pub struct ToolRegisterResponse {
     pub error: Option<String>,
 }
 
+/// ```json
+/// {
+///   "call_id": "...",
+///   "tool_name": "...",
+///   "arguments": {...}
+/// }
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolCallRequest {
     pub call_id: String,

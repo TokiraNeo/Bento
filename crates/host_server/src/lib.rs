@@ -5,6 +5,6 @@
  */
 
 pub mod config;
-pub mod session;
-pub mod server;
 pub mod event;
+pub mod server;
+pub mod session;
