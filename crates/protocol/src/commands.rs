@@ -5,27 +5,27 @@
  */
 
 pub mod tool_command {
-    pub static TOOLS_REGISTER: &'static str = "tools.register";
-    pub static TOOLS_REGISTERED: &'static str = "tools.registered";
+    pub const TOOLS_REGISTER: &'static str = "tools.register";
+    pub const TOOLS_REGISTERED: &'static str = "tools.registered";
 
-    pub static TOOL_CALL: &'static str = "tool.call";
-    pub static TOOL_RESULT: &'static str = "tool.result";
+    pub const TOOL_CALL: &'static str = "tool.call";
+    pub const TOOL_RESULT: &'static str = "tool.result";
 }
 
 pub mod host_command {
-    pub static HOST_HELLO: &'static str = "host.hello";
-    pub static HOST_WELCOME: &'static str = "host.welcome";
+    pub const HOST_HELLO: &'static str = "host.hello";
+    pub const HOST_WELCOME: &'static str = "host.welcome";
 
-    pub static HOST_READY: &'static str = "host.ready";
+    pub const HOST_READY: &'static str = "host.ready";
 
-    pub static HOST_PING: &'static str = "host.ping";
-    pub static HOST_PONG: &'static str = "host.pong";
+    //pub const HOST_PING: &'static str = "host.ping";
+    //pub const HOST_PONG: &'static str = "host.pong";
 }
 
 pub mod env_command {
-    pub static ENV_REPORT: &'static str = "env.report";
+    pub const ENV_REPORT: &'static str = "env.report";
 }
 
 pub mod event_command {
-    pub static EVENT_PUSH: &'static str = "event.push";
+    pub const EVENT_PUSH: &'static str = "event.push";
 }
