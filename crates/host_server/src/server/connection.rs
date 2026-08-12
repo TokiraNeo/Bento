@@ -8,6 +8,9 @@ use crate::{
     event::{HostEvent, HostEventBus, HostHandler, HostHandlerRegistry},
     session::{HostSession, HostSessionState},
 };
+use bento_protocol::jsonrpc::{JsonRpcNotification, JsonRpcRequest};
+use bento_protocol::jsonrpc::params::{HostHelloParams, HostReadyParams, ToolRegisterParams};
+use bento_protocol::jsonrpc::templates::{from_notification, from_request, TJsonRpcRequest};
 use bento_protocol::{
     commands::{host_command, tool_command},
     dispatch::{InboundFrame, OutboundFrame, parse_inbound_frame},
@@ -180,22 +183,52 @@ async fn handle_message(session: &mut HostSession, msg: Message, bus: &HostEvent
 
 async fn handle_inbound_frame(frame: InboundFrame, session: &mut HostSession, bus: &HostEventBus) {
     match frame {
-        InboundFrame::Request(request) => {
-            let method = request.method.as_str();
-
-            match (session.state, method) {
-                (HostSessionState::Connecting, host_command::HOST_HELLO) => {}
-                (HostSessionState::Helloed, tool_command::TOOLS_REGISTER) => {}
-                _ => {}
+        InboundFrame::Request(request) => match (session.state, request.method.as_str()) {
+            (HostSessionState::Connecting, host_command::HOST_HELLO) => {
+                handle_host_hello(session, request, bus).await;
             }
-        }
+            (HostSessionState::Helloed, tool_command::TOOLS_REGISTER) => {}
+            _ => {}
+        },
         InboundFrame::Notification(notification) => {
-            let method = notification.method.as_str();
-
-            match (session.state, method) {
+            match (session.state, notification.method.as_str()) {
                 (HostSessionState::Registered, host_command::HOST_READY) => {}
                 _ => {}
             }
+        }
+    }
+}
+
+#[tracing::instrument(skip(session, request, bus))]
+async fn handle_host_hello(session: &mut HostSession, request: JsonRpcRequest, bus: &HostEventBus) {
+    match from_request::<HostHelloParams>(request) {
+        Ok(rpc) => {
+            session.state = HostSessionState::Helloed;
+        }
+        Err(err) => {
+            error!("Failed to cast request: {}", err.message);
+        }
+    }
+}
+
+#[tracing::instrument(skip(session, request, bus))]
+async fn handle_tool_register(session: &mut HostSession, request: JsonRpcRequest, bus: &HostEventBus) {
+    match from_request::<ToolRegisterParams>(request) {
+        Ok(rpc) => {}
+        Err(err) => {
+            error!("Failed to cast request: {}", err.message);
+        }
+    }
+}
+
+#[tracing::instrument(skip(session, notification, bus))]
+async fn handle_host_ready(session: &mut HostSession, notification: JsonRpcNotification, bus: &HostEventBus) {
+    match from_notification::<HostReadyParams>(notification) {
+        Ok(rpc) => {
+            session.state = HostSessionState::Ready;
+        }
+        Err(err) => {
+            error!("Failed to cast notification: {}", err.message);
         }
     }
 }
