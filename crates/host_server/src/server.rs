@@ -58,7 +58,7 @@ impl HostServer {
         }
     }
 
-    pub fn subcribe(&self) -> broadcast::Receiver<HostEvent> {
+    pub fn subscribe(&self) -> broadcast::Receiver<HostEvent> {
         self.bus.subscribe()
     }
 

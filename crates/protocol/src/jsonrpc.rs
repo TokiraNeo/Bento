@@ -4,6 +4,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+pub mod params;
+pub mod results;
+pub mod templates;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 

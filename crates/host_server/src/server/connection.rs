@@ -26,8 +26,10 @@ use tokio_tungstenite::{
         handshake::server::{ErrorResponse, Request, Response},
     },
 };
+use tracing::{error, warn};
 use uuid::Uuid;
 
+#[tracing::instrument(skip(listener, token, bus, registry, shutdown_signal))]
 pub(super) async fn listen_connection(
     listener: TcpListener,
     token: String,
@@ -53,13 +55,16 @@ pub(super) async fn listen_connection(
                         });
                     }
 
-                    Err(_) => {}
+                    Err(_) => {
+                        error!("Error accepting tcp connection");
+                    }
                 }
             }
         }
     }
 }
 
+#[tracing::instrument(skip(tcp, token, bus, registry))]
 async fn handle_connection(
     tcp: TcpStream,
     token: String,
@@ -91,7 +96,7 @@ async fn handle_connection(
     {
         Ok(ws) => ws,
         Err(_) => {
-            todo!("Log Info here.");
+            error!("Failed to accept websocket stream.");
             return;
         }
     };
@@ -120,7 +125,7 @@ async fn handle_connection(
     let write_task = tokio::spawn(async move {
         while let Some(msg) = receiver.recv().await {
             if writer.send(msg).await.is_err() {
-                //todo!("Log Info here.");
+                error!("Failed to send message");
                 break;
             }
         }
@@ -128,7 +133,7 @@ async fn handle_connection(
 
     while let Some(Ok(msg)) = reader.next().await {
         if !handle_message(&mut session, msg, &bus).await {
-            //todo!("Log Info here.");
+            warn!("Failed to handle message");
             break;
         }
     }
@@ -140,6 +145,7 @@ async fn handle_connection(
     bus.emit(HostEvent::HostClosed { session_id });
 }
 
+#[tracing::instrument(skip(session, msg, bus, registry))]
 async fn handle_message(session: &mut HostSession, msg: Message, bus: &HostEventBus) -> bool {
     match msg {
         Message::Text(text) => {
@@ -148,7 +154,7 @@ async fn handle_message(session: &mut HostSession, msg: Message, bus: &HostEvent
                     handle_inbound_frame(frame, session, bus).await;
                 }
                 Err(err) => {
-                    //todo!("Log Error here");
+                    warn!("Failed to parse inbound frame: {:?}", err);
 
                     let response = JsonRpcResponse::new_error(String::new(), err);
 

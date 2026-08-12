@@ -7,16 +7,13 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ToolRisk {
     Low,
+    #[default]
     Medium,
     High,
-}
-
-fn default_risk() -> ToolRisk {
-    ToolRisk::Medium
 }
 
 /// ```json
@@ -50,7 +47,7 @@ pub struct ToolDefinition {
     /// ```
     pub input_schema: Value,
 
-    #[serde(default = "default_risk")]
+    #[serde(default)]
     pub risk: ToolRisk,
 
     #[serde(default)]
@@ -82,45 +79,6 @@ impl ToolDefinition {
 }
 
 /// ```json
-/// {
-///   "tools": [
-///     {"name": "...", "description": "...", "input_schema": {...}, "risk": "medium", "domain": "...", "tags": ["..."], "example": "..."},
-///   ]
-/// }
-/// ```
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ToolRegisterRequest {
-    pub tools: Vec<ToolDefinition>,
-}
-
-/// ```json
-/// {
-///   "count": 1,
-///   "error": "..."
-/// }
-/// ```
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ToolRegisterResponse {
-    pub count: usize,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
-}
-
-/// ```json
-/// {
-///   "call_id": "...",
-///   "tool_name": "...",
-///   "arguments": {...}
-/// }
-/// ```
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ToolCallRequest {
-    pub call_id: String,
-    pub tool_name: String,
-    pub arguments: Value,
-}
-
-/// ```json
 /// { "type": "text", "text": "..."}
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -128,22 +86,4 @@ pub struct ToolCallContent {
     #[serde(rename = "type")]
     pub content_type: String,
     pub text: String,
-}
-
-/// ```json
-/// {
-///   "call_id": "...",
-///   "content": [
-///     { "type": "text", "text": "..."}
-///   ],
-///   "is_error": false
-/// }
-/// ```
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ToolCallResult {
-    pub call_id: String,
-    pub content: Vec<ToolCallContent>,
-
-    #[serde(default)]
-    pub is_error: bool,
 }

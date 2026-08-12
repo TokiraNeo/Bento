@@ -9,6 +9,5 @@ pub mod dispatch;
 pub mod env;
 pub mod error;
 pub mod event;
-pub mod host;
 pub mod jsonrpc;
 pub mod tool;
