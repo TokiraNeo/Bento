@@ -11,3 +11,4 @@ pub mod error;
 pub mod event;
 pub mod jsonrpc;
 pub mod tool;
+pub mod versions;

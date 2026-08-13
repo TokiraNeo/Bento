@@ -8,6 +8,7 @@ mod connection;
 
 use crate::config::HostServerConfig;
 use crate::event::{HostEvent, HostEventBus, HostHandlerRegistry};
+use crate::namespace::HostNamespaceRegistry;
 use bento_protocol::dispatch::OutboundFrame;
 use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
@@ -35,7 +36,10 @@ pub struct HostServer {
     config: HostServerConfig,
 
     /// A map of session_id to HostHandler
-    registry: HostHandlerRegistry,
+    handlers: HostHandlerRegistry,
+
+    /// A map of namespace to session_id
+    namespaces: HostNamespaceRegistry,
 
     /// Event bus for host events
     bus: HostEventBus,
@@ -51,7 +55,8 @@ impl HostServer {
 
         Self {
             config,
-            registry: Arc::new(Mutex::default()),
+            handlers: Arc::new(Mutex::default()),
+            namespaces: HostNamespaceRegistry::new(),
             bus: HostEventBus::new(),
             shutdown_sender: sender,
             shutdown_receiver: receiver,
@@ -69,7 +74,8 @@ impl HostServer {
 
         let clone_token = self.config.token.clone();
         let clone_bus = self.bus.clone();
-        let clone_registry = self.registry.clone();
+        let clone_handlers = self.handlers.clone();
+        let clone_namespace = self.namespaces.clone();
         let shutdown_signal = self.shutdown_receiver.clone();
 
         tokio::spawn(async move {
@@ -77,7 +83,8 @@ impl HostServer {
                 listener,
                 clone_token,
                 clone_bus,
-                clone_registry,
+                clone_handlers,
+                clone_namespace,
                 shutdown_signal,
             )
             .await;
@@ -99,7 +106,7 @@ impl HostServer {
         session_id: String,
         frame: OutboundFrame,
     ) -> Result<(), String> {
-        let map = self.registry.lock().unwrap();
+        let map = self.handlers.lock().unwrap();
 
         let handler = map.get(&session_id).clone();
 

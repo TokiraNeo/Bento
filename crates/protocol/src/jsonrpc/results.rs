@@ -13,15 +13,13 @@ pub struct EmptyResult {}
 /// Bento -> Host
 /// ```json
 /// {
-///   "session_id": "unique_session_id",
-///   "namespace": "unique_namespace",
+///   "namespace": "blender#1",
 ///   "protocol_version": "2026-07-28",
 ///   "bento_version": "1.0.0",
 /// }
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HostWelcomeResult {
-    pub session_id: String,
     pub namespace: String,
     pub protocol_version: String,
     pub bento_version: String,

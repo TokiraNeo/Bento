@@ -37,7 +37,6 @@ pub enum HostEvent {
         session_id: String,
     },
     HostHelloed {
-        session_id: String,
         namespace: String,
     },
     HostRegistered {

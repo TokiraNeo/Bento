@@ -14,24 +14,21 @@ pub struct EmptyParams {}
 /// ```json
 /// {
 ///   "protocol_version": "2026-07-28",
+///   "host_name": "MyHost",
 /// }
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HostHelloParams {
     pub protocol_version: String,
+    pub host_name: String,
 }
 
 /// ```json
 /// {
-///   "host_name": "MyHost",
-///   "host_version": "1.0.0",
 /// }
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HostReadyParams {
-    pub host_name: String,
-    pub host_version: String,
-}
+pub struct HostReadyParams {}
 
 /// ```json
 /// {
