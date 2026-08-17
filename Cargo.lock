@@ -54,6 +54,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "bento_tool_rag"
+version = "1.0.0"
+
+[[package]]
 name = "block-buffer"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
