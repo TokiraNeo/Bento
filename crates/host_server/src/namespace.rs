@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use crate::utilities::create_uuid_simple;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use uuid::Uuid;
 
 /// namespace - session_id
 type HostNamespaceMap = HashMap<String, String>;
@@ -43,7 +43,7 @@ impl HostNamespaceRegistry {
         }
 
         // 通常来说，不会走到这里。
-        let namespace = format!("{}#{}", host_name, Uuid::new_v4().simple().to_string());
+        let namespace = format!("{}#{}", host_name, create_uuid_simple());
         map.insert(namespace.clone(), session_id);
         namespace
     }

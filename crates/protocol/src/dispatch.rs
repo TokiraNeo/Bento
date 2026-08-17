@@ -8,7 +8,7 @@ use crate::error::ErrorCode;
 use crate::jsonrpc::{JsonRpcError, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
+use std::borrow::Cow;
 /// - 有 `id` + 有 `method` → Request
 /// - 有 `id` + 无 `method` → Response
 /// - 无 `id` + 有 `method` → Notification
@@ -32,16 +32,15 @@ pub type OutboundFrame = Frame;
 pub fn parse_frame(text: &str) -> Result<Frame, JsonRpcError> {
     let value: Value = serde_json::from_str(text).map_err(|err| JsonRpcError {
         code: ErrorCode::ParseError.code(),
-        message: format!("Failed to parse JSON: {}", err),
+        message: Cow::Owned(format!("Failed to parse JSON: {}", err)),
         payload: None,
     })?;
 
     if !value.is_object() {
-        return Err(JsonRpcError {
-            code: ErrorCode::InvalidRequest.code(),
-            message: "Invalid JsonRpc message.".into(),
-            payload: None,
-        });
+        return Err(jsonrpc_error(
+            ErrorCode::InvalidRequest,
+            "Invalid JsonRpc message.".into(),
+        ));
     }
 
     let has_id = value.get("id").is_some();
@@ -83,10 +82,10 @@ pub fn parse_frame(text: &str) -> Result<Frame, JsonRpcError> {
     Ok(frame)
 }
 
-fn jsonrpc_error(code: ErrorCode, msg: String) -> JsonRpcError {
+fn jsonrpc_error(code: ErrorCode, message: Cow<'static, str>) -> JsonRpcError {
     JsonRpcError {
         code: code.code(),
-        message: msg,
+        message,
         payload: None,
     }
 }

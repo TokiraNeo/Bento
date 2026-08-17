@@ -8,6 +8,8 @@ pub mod params;
 pub mod results;
 pub mod templates;
 
+use std::borrow::Cow;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -17,7 +19,7 @@ use serde_json::Value;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JsonRpcError {
     pub code: i32,
-    pub message: String,
+    pub message: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub payload: Option<Value>,
 }

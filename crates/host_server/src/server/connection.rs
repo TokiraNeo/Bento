@@ -3,24 +3,27 @@
  * Copyright (C) 2026-present TokiraNeo <TokiraNeo@outlook.com>
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-
 use crate::namespace::HostNamespaceRegistry;
+use crate::request_task::RequestTaskManager;
+use crate::utilities::create_uuid;
 use crate::{
     event::{HostEvent, HostEventBus, HostHandler, HostHandlerRegistry},
     session::{HostSession, HostSessionState},
 };
+use bento_protocol::error::ErrorCode;
 use bento_protocol::jsonrpc::params::{HostHelloParams, HostReadyParams, ToolRegisterParams};
-use bento_protocol::jsonrpc::results::{HostWelcomeResult, ToolCallResult};
+use bento_protocol::jsonrpc::results::{HostWelcomeResult, ToolRegisterResult};
 use bento_protocol::jsonrpc::templates::{
-    TJsonRpcResponse, from_notification, from_request, from_response, into_response,
+    TJsonRpcResponse, from_notification, from_request, into_response,
 };
-use bento_protocol::jsonrpc::{JsonRpcNotification, JsonRpcRequest, JsonRpcResponse};
+use bento_protocol::jsonrpc::{JsonRpcError, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse};
 use bento_protocol::versions::{BENTO_VERSION, MCP_PROTOCOL_VERSION};
 use bento_protocol::{
     commands::{host_command, tool_command},
     dispatch::{InboundFrame, OutboundFrame, parse_frame},
 };
 use futures_util::{SinkExt, StreamExt};
+use std::borrow::Cow;
 use tokio::{
     net::{TcpListener, TcpStream},
     sync::{mpsc, watch},
@@ -34,15 +37,23 @@ use tokio_tungstenite::{
     },
 };
 use tracing::{error, warn};
-use uuid::Uuid;
 
-#[tracing::instrument(skip(listener, token, bus, handlers, namespaces, shutdown_signal))]
+#[tracing::instrument(skip(
+    listener,
+    token,
+    bus,
+    handlers,
+    namespaces,
+    request_manager,
+    shutdown_signal
+))]
 pub(super) async fn listen_connection(
     listener: TcpListener,
     token: String,
     bus: HostEventBus,
     handlers: HostHandlerRegistry,
     namespaces: HostNamespaceRegistry,
+    request_manager: RequestTaskManager,
     mut shutdown_signal: watch::Receiver<bool>,
 ) {
     loop {
@@ -58,9 +69,10 @@ pub(super) async fn listen_connection(
                         let clone_bus = bus.clone();
                         let clone_handlers = handlers.clone();
                         let clone_namespaces = namespaces.clone();
+                        let clone_request_manager = request_manager.clone();
 
                         tokio::spawn(async move {
-                            handle_connection(tcp, clone_token, clone_bus, clone_handlers, clone_namespaces).await;
+                            handle_connection(tcp, clone_token, clone_bus, clone_handlers, clone_namespaces, clone_request_manager).await;
                         });
                     }
 
@@ -73,13 +85,14 @@ pub(super) async fn listen_connection(
     }
 }
 
-#[tracing::instrument(skip(tcp, token, bus, handlers, namespaces))]
+#[tracing::instrument(skip(tcp, token, bus, handlers, namespaces, request_manager))]
 async fn handle_connection(
     tcp: TcpStream,
     token: String,
     bus: HostEventBus,
     handlers: HostHandlerRegistry,
     namespaces: HostNamespaceRegistry,
+    request_manager: RequestTaskManager,
 ) {
     let ws: WebSocketStream<TcpStream> = match accept_hdr_async(
         tcp,
@@ -111,7 +124,7 @@ async fn handle_connection(
         }
     };
 
-    let session_id = Uuid::new_v4().to_string();
+    let session_id = create_uuid();
 
     let (mut writer, mut reader) = ws.split();
 
@@ -142,7 +155,7 @@ async fn handle_connection(
     });
 
     while let Some(Ok(msg)) = reader.next().await {
-        if !handle_message(&mut session, msg, &bus, &namespaces).await {
+        if !handle_message(&mut session, msg, &bus, &namespaces, &request_manager).await {
             warn!("Failed to handle message");
             break;
         }
@@ -151,27 +164,29 @@ async fn handle_connection(
     let _ = write_task.await;
 
     // Close session and broadcast closed event.
+    request_manager.cancel_all_for_session(&session_id);
     session.state = HostSessionState::Closed;
     bus.emit(HostEvent::HostClosed { session_id });
 }
 
-#[tracing::instrument(skip(session, msg, bus, namespaces))]
+#[tracing::instrument(skip(session, msg, bus, namespaces, request_manager))]
 async fn handle_message(
     session: &mut HostSession,
     msg: Message,
     bus: &HostEventBus,
     namespaces: &HostNamespaceRegistry,
+    request_manager: &RequestTaskManager,
 ) -> bool {
     match msg {
         Message::Text(text) => {
             match parse_frame(text.as_str()) {
                 Ok(frame) => {
-                    handle_inbound_frame(frame, session, bus, namespaces).await;
+                    handle_inbound_frame(frame, session, bus, namespaces, request_manager).await;
                 }
                 Err(err) => {
                     error!("Failed to parse inbound frame: {:?}", err);
 
-                    let id = Uuid::new_v4().to_string();
+                    let id = create_uuid();
                     let response = JsonRpcResponse::new_error(id, err);
 
                     session
@@ -199,6 +214,7 @@ async fn handle_inbound_frame(
     session: &mut HostSession,
     bus: &HostEventBus,
     namespaces: &HostNamespaceRegistry,
+    request_manager: &RequestTaskManager,
 ) {
     match frame {
         InboundFrame::Request(request) => match (session.state, request.method.as_str()) {
@@ -215,7 +231,7 @@ async fn handle_inbound_frame(
                 );
             }
         },
-        InboundFrame::Response(response) => {}
+
         InboundFrame::Notification(notification) => {
             match (session.state, notification.method.as_str()) {
                 (HostSessionState::Registered, host_command::HOST_READY) => {
@@ -227,6 +243,13 @@ async fn handle_inbound_frame(
                         state, method
                     );
                 }
+            }
+        }
+
+        InboundFrame::Response(response) => {
+            let id = response.id.clone();
+            if !request_manager.response(response) {
+                warn!("Unexpected response, no pending for id: {}", id);
             }
         }
     }
@@ -283,23 +306,67 @@ async fn handle_tool_register(
     bus: &HostEventBus,
 ) {
     match from_request::<ToolRegisterParams>(request) {
-        Ok(rpc) => {}
+        Ok(rpc) => {
+            let tools = rpc.params.tools;
+
+            // validate tools
+            let invalid: Vec<String> = tools
+                .iter()
+                .filter_map(|tool| match tool.validate() {
+                    Ok(()) => None,
+                    Err(e) => Some(format!("{}: {}", tool.name, e)),
+                })
+                .collect();
+
+            // response
+            let response = if invalid.is_empty() {
+                let count = tools.len();
+
+                session.tools = tools;
+                session.state = HostSessionState::Registered;
+
+                bus.emit(HostEvent::HostRegistered {
+                    session_id: session.session_id.clone(),
+                    tool_count: count,
+                });
+
+                // TODO: 在回包前完成 RAG 索引。
+                // 当前 broadcast 是异步的，HostRegistered 的订阅者(RAG)可能尚未建完索引，
+                // 若 host 此时收到 tools.registered 立即发 ready，Agent 可能搜不到刚注册的工具。
+                // 在此处 `await indexer.index_tools(&session.namespace, &session.tools)` 完成后再回包。
+
+                TJsonRpcResponse::<ToolRegisterResult> {
+                    jsonrpc: rpc.jsonrpc,
+                    id: rpc.id,
+                    result: Some(ToolRegisterResult { count, error: None }),
+                    error: None,
+                }
+            } else {
+                // Reject when has invalid tools
+                warn!("Invalid tools in register: {}", invalid.join("; "));
+
+                TJsonRpcResponse::<ToolRegisterResult> {
+                    jsonrpc: rpc.jsonrpc,
+                    id: rpc.id,
+                    result: None,
+                    error: Some(JsonRpcError {
+                        code: ErrorCode::InvalidToolArgs.code(),
+                        message: Cow::Borrowed("Invalid tools found."),
+                        payload: serde_json::from_str(invalid.join(";").to_string().as_str())
+                            .unwrap(),
+                    }),
+                }
+            };
+
+            match into_response(response) {
+                Ok(resp) => session.handler.send(OutboundFrame::Response(resp)).await,
+                Err(err) => {
+                    error!("Failed to cast response: {:?}", err);
+                }
+            }
+        }
         Err(err) => {
             error!("Failed to cast request: {:?}", err);
-        }
-    }
-}
-
-#[tracing::instrument(skip(session, response, bus))]
-async fn handle_tool_result(
-    session: &mut HostSession,
-    response: JsonRpcResponse,
-    bus: &HostEventBus,
-) {
-    match from_response::<ToolCallResult>(response) {
-        Ok(resp) => {}
-        Err(err) => {
-            error!("Failed to cast response: {:?}", err);
         }
     }
 }
@@ -311,8 +378,11 @@ async fn handle_host_ready(
     bus: &HostEventBus,
 ) {
     match from_notification::<HostReadyParams>(notification) {
-        Ok(rpc) => {
+        Ok(_rpc) => {
             session.state = HostSessionState::Ready;
+            bus.emit(HostEvent::HostReady {
+                session_id: session.session_id.clone(),
+            });
         }
         Err(err) => {
             error!("Failed to cast notification: {:?}", err);

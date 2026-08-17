@@ -9,10 +9,20 @@ mod connection;
 use crate::config::HostServerConfig;
 use crate::event::{HostEvent, HostEventBus, HostHandlerRegistry};
 use crate::namespace::HostNamespaceRegistry;
+use crate::request_task::{RequestOutcome, RequestTask, RequestTaskManager};
+use crate::utilities::create_uuid;
+use bento_protocol::commands::tool_command;
 use bento_protocol::dispatch::OutboundFrame;
+use bento_protocol::jsonrpc::params::ToolCallParams;
+use bento_protocol::jsonrpc::templates::{TJsonRpcRequest, into_request};
+use bento_protocol::jsonrpc::{JsonRpcRequest, JsonRpcResponse};
+use bento_protocol::tool_index::ToolIndexer;
+use bento_protocol::versions::JSON_RPC_VERSION;
+use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use tokio::net::TcpListener;
-use tokio::sync::{broadcast, watch};
+use tokio::sync::{broadcast, oneshot, watch};
 
 /// ```
 /// 宿主                                Hub
@@ -44,13 +54,17 @@ pub struct HostServer {
     /// Event bus for host events
     bus: HostEventBus,
 
+    request_manager: RequestTaskManager,
+
+    tool_indexer: Arc<dyn ToolIndexer>,
+
     /// Shut down signal for worker
     shutdown_sender: watch::Sender<bool>,
     shutdown_receiver: watch::Receiver<bool>,
 }
 
 impl HostServer {
-    pub fn new(config: HostServerConfig) -> Self {
+    pub fn new(config: HostServerConfig, tool_indexer: Arc<dyn ToolIndexer>) -> Self {
         let (sender, receiver) = watch::channel(false);
 
         Self {
@@ -58,6 +72,8 @@ impl HostServer {
             handlers: Arc::new(Mutex::default()),
             namespaces: HostNamespaceRegistry::new(),
             bus: HostEventBus::new(),
+            request_manager: RequestTaskManager::new(),
+            tool_indexer,
             shutdown_sender: sender,
             shutdown_receiver: receiver,
         }
@@ -76,6 +92,7 @@ impl HostServer {
         let clone_bus = self.bus.clone();
         let clone_handlers = self.handlers.clone();
         let clone_namespace = self.namespaces.clone();
+        let clone_request_manager = self.request_manager.clone();
         let shutdown_signal = self.shutdown_receiver.clone();
 
         tokio::spawn(async move {
@@ -85,6 +102,7 @@ impl HostServer {
                 clone_bus,
                 clone_handlers,
                 clone_namespace,
+                clone_request_manager,
                 shutdown_signal,
             )
             .await;
@@ -101,21 +119,83 @@ impl HostServer {
         Ok(())
     }
 
-    pub async fn send_to_host(
+    async fn send_to_host(
         &self,
         session_id: String,
         frame: OutboundFrame,
-    ) -> Result<(), String> {
+    ) -> Result<(), Cow<'static, str>> {
         let map = self.handlers.lock().unwrap();
 
         let handler = map.get(&session_id).clone();
 
         if let None = handler {
-            return Err("Session Handler not found.".into());
+            return Err(Cow::Borrowed("Session Handler not found."));
         }
 
         handler.unwrap().send(frame).await;
 
         Ok(())
+    }
+
+    async fn request_to_host(
+        &self,
+        namespace: String,
+        request: JsonRpcRequest,
+        timeout: Duration,
+    ) -> Result<JsonRpcResponse, Cow<'static, str>> {
+        let session_id = self.namespaces.session_id(namespace);
+
+        match session_id {
+            Some(s) => {
+                let (sender, receiver) = oneshot::channel::<RequestOutcome>();
+
+                let id = request.id.clone();
+
+                self.request_manager.register(RequestTask {
+                    id: id.clone(),
+                    session_id: s.clone(),
+                    responder: sender,
+                });
+
+                if let Err(err) = self.send_to_host(s, OutboundFrame::Request(request)).await {
+                    return Err(err);
+                }
+
+                match tokio::time::timeout(timeout, receiver).await {
+                    Ok(Ok(RequestOutcome::Response(resp))) => Ok(resp),
+
+                    Ok(Ok(RequestOutcome::Canceled)) => {
+                        Err(Cow::Borrowed("Request Task Canceled."))
+                    }
+
+                    Ok(Err(_)) => Err(Cow::Borrowed("Request Task Failed.")),
+
+                    Err(_) => {
+                        self.request_manager.cancel(&id);
+                        Err(Cow::Borrowed("Request Task Timeout."))
+                    }
+                }
+            }
+            None => Err(Cow::Borrowed("Session not found.")),
+        }
+    }
+
+    pub async fn call_tool(
+        &self,
+        namespace: String,
+        params: ToolCallParams,
+        timeout: Duration,
+    ) -> Result<JsonRpcResponse, Cow<'static, str>> {
+        let request = into_request(TJsonRpcRequest::<ToolCallParams> {
+            jsonrpc: JSON_RPC_VERSION.to_string(),
+            id: create_uuid(),
+            method: tool_command::TOOL_CALL.to_string(),
+            params,
+        });
+
+        match request {
+            Ok(req) => self.request_to_host(namespace, req, timeout).await,
+            Err(err) => Err(err.message),
+        }
     }
 }

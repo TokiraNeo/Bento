@@ -8,6 +8,7 @@ use crate::error::ErrorCode;
 use crate::jsonrpc::{JsonRpcError, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
+use std::borrow::Cow;
 
 pub fn from_request<P: DeserializeOwned>(
     from: JsonRpcRequest,
@@ -58,7 +59,7 @@ impl<P: DeserializeOwned> TryFrom<JsonRpcRequest> for TJsonRpcRequest<P> {
     fn try_from(value: JsonRpcRequest) -> Result<Self, Self::Error> {
         let to = serde_json::from_value::<P>(value.params).map_err(|err| JsonRpcError {
             code: ErrorCode::ParseError.code(),
-            message: err.to_string(),
+            message: Cow::Owned(err.to_string()),
             payload: None,
         })?;
 
@@ -84,7 +85,7 @@ impl<P: Serialize> TryFrom<TJsonRpcRequest<P>> for JsonRpcRequest {
 
         let from = serde_json::to_value(params).map_err(|err| JsonRpcError {
             code: ErrorCode::ParseError.code(),
-            message: err.to_string(),
+            message: Cow::Owned(err.to_string()),
             payload: None,
         })?;
 
@@ -109,7 +110,7 @@ impl<P: DeserializeOwned> TryFrom<JsonRpcNotification> for TJsonRpcNotification<
     fn try_from(value: JsonRpcNotification) -> Result<Self, Self::Error> {
         let to = serde_json::from_value::<P>(value.params).map_err(|err| JsonRpcError {
             code: ErrorCode::ParseError.code(),
-            message: err.to_string(),
+            message: Cow::Owned(err.to_string()),
             payload: None,
         })?;
 
@@ -133,7 +134,7 @@ impl<P: Serialize> TryFrom<TJsonRpcNotification<P>> for JsonRpcNotification {
 
         let from = serde_json::to_value(params).map_err(|err| JsonRpcError {
             code: ErrorCode::ParseError.code(),
-            message: err.to_string(),
+            message: Cow::Owned(err.to_string()),
             payload: None,
         })?;
 
@@ -169,7 +170,7 @@ impl<P: DeserializeOwned> TryFrom<JsonRpcResponse> for TJsonRpcResponse<P> {
             Some(v) => {
                 let to = serde_json::from_value::<P>(v).map_err(|err| JsonRpcError {
                     code: ErrorCode::ParseError.code(),
-                    message: err.to_string(),
+                    message: Cow::Owned(err.to_string()),
                     payload: None,
                 })?;
 
@@ -213,7 +214,7 @@ impl<P: Serialize> TryFrom<TJsonRpcResponse<P>> for JsonRpcResponse {
             Some(p) => {
                 let from = serde_json::to_value(p).map_err(|err| JsonRpcError {
                     code: ErrorCode::ParseError.code(),
-                    message: err.to_string(),
+                    message: Cow::Owned(err.to_string()),
                     payload: None,
                 })?;
 
