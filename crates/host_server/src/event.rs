@@ -14,9 +14,13 @@ use tokio::sync::{broadcast, mpsc};
 use tokio_tungstenite::tungstenite::Message;
 
 #[derive(Clone)]
-pub(super) struct HostHandler(pub mpsc::Sender<Message>);
+pub(super) struct HostHandler(mpsc::Sender<Message>);
 
 impl HostHandler {
+    pub fn new(sender: mpsc::Sender<Message>) -> Self {
+        Self(sender)
+    }
+
     pub async fn send(&self, frame: OutboundFrame) {
         let msg = Message::Text(serde_json::to_string(&frame).unwrap_or_default().into());
         let _ = self.0.send(msg).await;

@@ -145,7 +145,7 @@ async fn handle_connection(
 
     let (sender, mut receiver) = mpsc::channel::<Message>(1024);
 
-    let handler = HostHandler(sender);
+    let handler = HostHandler::new(sender);
 
     // Insert new Handler for new host session.
     handlers
