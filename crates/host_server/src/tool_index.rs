@@ -17,7 +17,14 @@ pub struct ToolIndexTask {
 pub struct ToolIndexRequester(pub mpsc::Sender<ToolIndexTask>);
 
 impl ToolIndexRequester {
-    pub async fn send(&self, req: ToolIndexTask) {
-        let _ = self.0.send(req).await;
+    pub async fn send(&self, req: ToolIndexTask) -> Result<(), Cow<'static, str>> {
+        let result = self.0.send(req).await;
+
+        match result {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                Err(Cow::Owned(err.to_string()))
+            }
+        }
     }
 }

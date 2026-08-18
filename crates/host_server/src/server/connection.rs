@@ -398,16 +398,19 @@ async fn handle_tool_register(
                         }
                     }
 
-                    Err(err) => TJsonRpcResponse::<ToolRegisterResult> {
+                    Err(err) => {
+                        error!("Failed to index tools: {:?}", err);
+
+                        TJsonRpcResponse::<ToolRegisterResult> {
                         jsonrpc: rpc.jsonrpc,
                         id: rpc.id,
                         result: None,
                         error: Some(JsonRpcError {
                             code: ErrorCode::InternalError.code(),
-                            message: err,
-                            payload: Some(serde_json::to_value("Failed to index tools").unwrap()),
+                            message: Cow::Borrowed("Failed to index tools."),
+                            payload: None,
                         }),
-                    },
+                    } },
                 };
 
                 match into_response(response) {
@@ -458,11 +461,17 @@ async fn handle_index_tool(
         responder: sender,
     };
 
-    index_requester.send(task).await;
+    match index_requester.send(task).await {
+        Ok(_) => {
+            match receiver.await {
+                Ok(Ok(count)) => Ok(count),
+                Ok(Err(err)) => Err(err),
+                Err(err) => Err(Cow::Owned(err.to_string())),
+            }
+        }
 
-    match receiver.await {
-        Ok(Ok(count)) => Ok(count),
-        Ok(Err(err)) => Err(err),
-        Err(err) => Err(Cow::Owned(err.to_string())),
+        Err(err) => {
+            Err(err)
+        }
     }
 }
