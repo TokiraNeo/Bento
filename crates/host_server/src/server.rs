@@ -10,13 +10,13 @@ use crate::config::HostServerConfig;
 use crate::event::{HostEvent, HostEventBus, HostHandlerRegistry};
 use crate::namespace::HostNamespaceRegistry;
 use crate::request_task::{RequestOutcome, RequestTask, RequestTaskManager};
+use crate::tool_index::ToolIndexRequester;
 use crate::utilities::create_uuid;
 use bento_protocol::commands::tool_command;
 use bento_protocol::dispatch::OutboundFrame;
 use bento_protocol::jsonrpc::params::ToolCallParams;
 use bento_protocol::jsonrpc::templates::{TJsonRpcRequest, into_request};
 use bento_protocol::jsonrpc::{JsonRpcRequest, JsonRpcResponse};
-use bento_protocol::tool_index::ToolIndexer;
 use bento_protocol::versions::JSON_RPC_VERSION;
 use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
@@ -56,7 +56,7 @@ pub struct HostServer {
 
     request_manager: RequestTaskManager,
 
-    tool_indexer: Arc<dyn ToolIndexer>,
+    index_requester: ToolIndexRequester,
 
     /// Shut down signal for worker
     shutdown_sender: watch::Sender<bool>,
@@ -64,7 +64,7 @@ pub struct HostServer {
 }
 
 impl HostServer {
-    pub fn new(config: HostServerConfig, tool_indexer: Arc<dyn ToolIndexer>) -> Self {
+    pub fn new(config: HostServerConfig, index_requester: ToolIndexRequester) -> Self {
         let (sender, receiver) = watch::channel(false);
 
         Self {
@@ -73,7 +73,7 @@ impl HostServer {
             namespaces: HostNamespaceRegistry::new(),
             bus: HostEventBus::new(),
             request_manager: RequestTaskManager::new(),
-            tool_indexer,
+            index_requester,
             shutdown_sender: sender,
             shutdown_receiver: receiver,
         }
@@ -93,6 +93,7 @@ impl HostServer {
         let clone_handlers = self.handlers.clone();
         let clone_namespace = self.namespaces.clone();
         let clone_request_manager = self.request_manager.clone();
+        let clone_index_requester = self.index_requester.clone();
         let shutdown_signal = self.shutdown_receiver.clone();
 
         tokio::spawn(async move {
@@ -103,6 +104,7 @@ impl HostServer {
                 clone_handlers,
                 clone_namespace,
                 clone_request_manager,
+                clone_index_requester,
                 shutdown_signal,
             )
             .await;

@@ -10,8 +10,6 @@ pub enum ErrorCode {
     ParseError = -32700,
     #[error("Invalid request")]
     InvalidRequest = -32600,
-    #[error("Method not found")]
-    MethodNotFound = -32601,
     #[error("Invalid params")]
     InvalidParams = -32602,
     #[error("Internal error")]
@@ -24,18 +22,6 @@ pub enum ErrorCode {
     ToolExecutionFailed = -32002,
     #[error("Tool timeout")]
     ToolTimeout = -32003,
-    #[error("Approval required / denied")]
-    ApprovalRequired = -32004,
-    #[error("Task cancelled")]
-    TaskCancelled = -32005,
-    #[error("Host busy")]
-    HostBusy = -32006,
-    #[error("Auth failed")]
-    AuthFailed = -32007,
-    #[error("Protocol version mismatch")]
-    ProtocolVersionMismatch = -32008,
-    #[error("Host not ready")]
-    HostNotReady = -32009,
     #[error("Invalid tool arguments")]
     InvalidToolArgs = -32010,
 }

@@ -40,7 +40,7 @@ pub enum HostEvent {
         namespace: String,
     },
     HostRegistered {
-        session_id: String,
+        namespace: String,
         tool_count: usize,
     },
     HostReady {

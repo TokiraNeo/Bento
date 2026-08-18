@@ -10,3 +10,4 @@ description.workspace = true
 repository.workspace = true
 
 [dependencies]
+bento_protocol = { path = "../protocol" }

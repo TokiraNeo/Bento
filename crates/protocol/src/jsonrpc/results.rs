@@ -28,14 +28,11 @@ pub struct HostWelcomeResult {
 /// ```json
 /// {
 ///   "count": 1,
-///   "error": "..."
 /// }
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolRegisterResult {
     pub count: usize,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
 }
 
 /// ```json

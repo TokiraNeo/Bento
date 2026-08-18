@@ -10,4 +10,5 @@ mod namespace;
 mod request_task;
 pub mod server;
 mod session;
+pub mod tool_index;
 mod utilities;

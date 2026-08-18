@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use bento_protocol::tool::ToolDefinition;
 use serde::{Deserialize, Serialize};
 
 use crate::event::HostHandler;
@@ -36,7 +35,6 @@ pub(super) struct HostSession {
     pub handler: HostHandler,
     pub namespace: String,
     pub identity: HostRuntimeIdentity,
-    pub tools: Vec<ToolDefinition>,
 }
 
 impl HostSession {
@@ -47,7 +45,6 @@ impl HostSession {
             handler,
             namespace: String::new(),
             identity: HostRuntimeIdentity::default(),
-            tools: Vec::new(),
         }
     }
 }
