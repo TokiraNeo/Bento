@@ -148,10 +148,7 @@ async fn handle_connection(
     let handler = HostHandler::new(sender);
 
     // Insert new Handler for new host session.
-    handlers
-        .lock()
-        .unwrap()
-        .insert(session_id.clone(), handler.clone());
+    handlers.register(session_id.clone(), handler.clone());
 
     let mut session = HostSession::new(session_id.clone(), handler);
 
@@ -185,18 +182,30 @@ async fn handle_connection(
         }
     }
 
-    let _ = write_task.await;
+    // 只有sender全部drop后，receiver的recv()才会返回None，所以这里先确保sender的两份副本drop: session、handlers
 
-    // remove tools with this host session
-    let _ = index_requester
+    request_manager.cancel_all_for_session(&session_id);
+    handlers.remove(&session_id); // 释放sender
+
+    if let Err(err) = index_requester
         .send(ToolIndexTask::Remove {
             session_id: session_id.clone(),
         })
-        .await;
+        .await
+    {
+        warn!(
+            "Failed to send Remove task for session {}: {}",
+            session_id, err
+        );
+    }
 
-    // Close session and broadcast closed event.
-    request_manager.cancel_all_for_session(&session_id);
+    namespaces.release(session.namespace.clone());
+
     session.state = HostSessionState::Closed;
+    drop(session); // 释放sender
+
+    let _ = write_task.await;
+
     bus.emit(HostEvent::HostClosed { session_id });
 }
 
@@ -452,7 +461,12 @@ async fn handle_host_ready(
                 session_id: session.session_id.clone(),
             };
 
-            let _ = index_requester.send(task).await;
+            if let Err(err) = index_requester.send(task).await {
+                warn!(
+                    "Failed to send Ready task for session {}: {}",
+                    session.session_id, err
+                );
+            }
 
             bus.emit(HostEvent::HostReady {
                 session_id: session.session_id.clone(),

@@ -33,7 +33,35 @@ impl HostHandler {
 
 type HostHandlerMap = HashMap<String, HostHandler>;
 
-pub(super) type HostHandlerRegistry = Arc<Mutex<HostHandlerMap>>;
+// pub(super) type HostHandlerRegistry = Arc<Mutex<HostHandlerMap>>;
+
+#[derive(Clone)]
+pub(super) struct HostHandlerRegistry {
+    handlers: Arc<Mutex<HostHandlerMap>>,
+}
+
+impl HostHandlerRegistry {
+    pub fn new() -> Self {
+        Self {
+            handlers: Arc::new(Mutex::new(HashMap::new())),
+        }
+    }
+
+    pub fn register(&self, session_id: String, handler: HostHandler) {
+        let mut handlers = self.handlers.lock().unwrap();
+        handlers.insert(session_id, handler);
+    }
+
+    pub fn remove(&self, session_id: &str) {
+        let mut handlers = self.handlers.lock().unwrap();
+        handlers.remove(session_id);
+    }
+
+    pub fn get(&self, session_id: &str) -> Option<HostHandler> {
+        let handlers = self.handlers.lock().unwrap();
+        handlers.get(session_id).cloned()
+    }
+}
 
 #[derive(Clone)]
 pub enum HostEvent {

@@ -19,7 +19,6 @@ use bento_protocol::jsonrpc::templates::{TJsonRpcRequest, into_request};
 use bento_protocol::jsonrpc::{JsonRpcRequest, JsonRpcResponse};
 use bento_protocol::versions::JSON_RPC_VERSION;
 use std::borrow::Cow;
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::net::TcpListener;
 use tokio::sync::{broadcast, oneshot, watch};
@@ -69,7 +68,7 @@ impl HostServer {
 
         Self {
             config,
-            handlers: Arc::new(Mutex::default()),
+            handlers: HostHandlerRegistry::new(),
             namespaces: HostNamespaceRegistry::new(),
             bus: HostEventBus::new(),
             request_manager: RequestTaskManager::new(),
@@ -126,15 +125,12 @@ impl HostServer {
         session_id: String,
         frame: OutboundFrame,
     ) -> Result<(), Cow<'static, str>> {
-        let map = self.handlers.lock().unwrap();
+        let handler = match self.handlers.get(&session_id) {
+            Some(h) => h,
+            None => return Err(Cow::Borrowed("Session Handler not found.")),
+        };
 
-        let handler = map.get(&session_id).clone();
-
-        if let None = handler {
-            return Err(Cow::Borrowed("Session Handler not found."));
-        }
-
-        handler.unwrap().send(frame).await;
+        handler.send(frame).await;
 
         Ok(())
     }
