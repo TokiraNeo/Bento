@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ToolRagConfig {
-    pub top_k: u8,  // 语义搜索候选数
-    pub fts_k: u8,  // FTS候选数
+    pub top_k: u8, // 语义搜索候选数
+    pub fts_k: u8, // FTS候选数
     pub semantic_search: bool,
 }
 

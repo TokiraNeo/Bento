@@ -187,6 +187,13 @@ async fn handle_connection(
 
     let _ = write_task.await;
 
+    // remove tools with this host session
+    let _ = index_requester
+        .send(ToolIndexTask::Remove {
+            session_id: session_id.clone(),
+        })
+        .await;
+
     // Close session and broadcast closed event.
     request_manager.cancel_all_for_session(&session_id);
     session.state = HostSessionState::Closed;
@@ -270,7 +277,7 @@ async fn handle_inbound_frame(
         InboundFrame::Notification(notification) => {
             match (session.state, notification.method.as_str()) {
                 (HostSessionState::Registered, host_command::HOST_READY) => {
-                    handle_host_ready(session, notification, bus).await;
+                    handle_host_ready(session, notification, bus, index_requester).await;
                 }
                 (state, method) => {
                     warn!(
@@ -374,7 +381,7 @@ async fn handle_tool_register(
                     }
                 }
             } else {
-                let response = match handle_index_tool(
+                let response = match handle_tool_replace(
                     session.session_id.clone(),
                     session.namespace.clone(),
                     tools,
@@ -430,15 +437,23 @@ async fn handle_tool_register(
     }
 }
 
-#[tracing::instrument(skip(session, notification, bus))]
+#[tracing::instrument(skip(session, notification, bus, index_requester))]
 async fn handle_host_ready(
     session: &mut HostSession,
     notification: JsonRpcNotification,
     bus: &HostEventBus,
+    index_requester: &ToolIndexRequester,
 ) {
     match from_notification::<HostReadyParams>(notification) {
         Ok(_rpc) => {
             session.state = HostSessionState::Ready;
+
+            let task = ToolIndexTask::Ready {
+                session_id: session.session_id.clone(),
+            };
+
+            let _ = index_requester.send(task).await;
+
             bus.emit(HostEvent::HostReady {
                 session_id: session.session_id.clone(),
             });
@@ -450,7 +465,7 @@ async fn handle_host_ready(
 }
 
 #[tracing::instrument(skip(session_id, namespace, tools, index_requester))]
-async fn handle_index_tool(
+async fn handle_tool_replace(
     session_id: String,
     namespace: String,
     tools: Vec<ToolDefinition>,
@@ -458,7 +473,7 @@ async fn handle_index_tool(
 ) -> Result<usize, Cow<'static, str>> {
     let (sender, receiver) = oneshot::channel();
 
-    let task = ToolIndexTask {
+    let task = ToolIndexTask::Replace {
         session_id,
         namespace,
         tools,

@@ -7,11 +7,26 @@ use bento_protocol::tool::ToolDefinition;
 use std::borrow::Cow;
 use tokio::sync::{mpsc, oneshot};
 
-pub struct ToolIndexTask {
-    pub session_id: String,
-    pub namespace: String,
-    pub tools: Vec<ToolDefinition>,
-    pub responder: oneshot::Sender<Result<usize, Cow<'static, str>>>,
+// pub struct ToolIndexTask {
+//     pub session_id: String,
+//     pub namespace: String,
+//     pub tools: Vec<ToolDefinition>,
+//     pub responder: oneshot::Sender<Result<usize, Cow<'static, str>>>,
+// }
+
+pub enum ToolIndexTask {
+    Replace {
+        session_id: String,
+        namespace: String,
+        tools: Vec<ToolDefinition>,
+        responder: oneshot::Sender<Result<usize, Cow<'static, str>>>,
+    },
+    Ready {
+        session_id: String,
+    },
+    Remove {
+        session_id: String,
+    },
 }
 
 #[derive(Clone)]
