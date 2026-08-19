@@ -87,3 +87,25 @@ pub struct ToolCallContent {
     pub content_type: String,
     pub text: String,
 }
+
+/// Tool hit for tool-rag-index.
+/// for example:
+/// ```json
+/// {
+///   "qualified_name": "blender.create_cube",
+///   "namespace": "blender",
+///   "name": "create_cube",
+///   "risk": "medium",
+///   "description": "Tool used to create a cube.",
+///   "domain": "modeling"
+/// }
+/// ```
+#[derive(Clone, Serialize, Deserialize)]
+pub struct ToolHit {
+    pub qualified_name: String,
+    pub namespace: String,
+    pub name: String,
+    pub risk: ToolRisk,
+    pub description: String,
+    pub domain: Option<String>,
+}

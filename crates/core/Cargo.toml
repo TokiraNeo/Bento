@@ -12,4 +12,5 @@ repository.workspace = true
 [dependencies]
 bento_host_server = { path = "../host_server" }
 bento_agent_server = { path = "../agent_server" }
+bento_tool_rag = { path = "../tool_rag" }
 serde = { version = "1.0.229", features = ["derive"] }

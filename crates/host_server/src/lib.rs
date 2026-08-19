@@ -12,3 +12,6 @@ pub mod server;
 mod session;
 pub mod tool_index;
 mod utilities;
+
+pub use config::HostServerConfig;
+pub use server::HostServer;
