@@ -375,6 +375,7 @@ async fn handle_tool_register(
                 }
             } else {
                 let response = match handle_index_tool(
+                    session.session_id.clone(),
                     session.namespace.clone(),
                     tools,
                     index_requester,
@@ -402,15 +403,16 @@ async fn handle_tool_register(
                         error!("Failed to index tools: {:?}", err);
 
                         TJsonRpcResponse::<ToolRegisterResult> {
-                        jsonrpc: rpc.jsonrpc,
-                        id: rpc.id,
-                        result: None,
-                        error: Some(JsonRpcError {
-                            code: ErrorCode::InternalError.code(),
-                            message: Cow::Borrowed("Failed to index tools."),
-                            payload: None,
-                        }),
-                    } },
+                            jsonrpc: rpc.jsonrpc,
+                            id: rpc.id,
+                            result: None,
+                            error: Some(JsonRpcError {
+                                code: ErrorCode::InternalError.code(),
+                                message: Cow::Borrowed("Failed to index tools."),
+                                payload: None,
+                            }),
+                        }
+                    }
                 };
 
                 match into_response(response) {
@@ -447,8 +449,9 @@ async fn handle_host_ready(
     }
 }
 
-#[tracing::instrument(skip(namespace, tools, index_requester))]
+#[tracing::instrument(skip(session_id, namespace, tools, index_requester))]
 async fn handle_index_tool(
+    session_id: String,
     namespace: String,
     tools: Vec<ToolDefinition>,
     index_requester: &ToolIndexRequester,
@@ -456,22 +459,19 @@ async fn handle_index_tool(
     let (sender, receiver) = oneshot::channel();
 
     let task = ToolIndexTask {
+        session_id,
         namespace,
         tools,
         responder: sender,
     };
 
     match index_requester.send(task).await {
-        Ok(_) => {
-            match receiver.await {
-                Ok(Ok(count)) => Ok(count),
-                Ok(Err(err)) => Err(err),
-                Err(err) => Err(Cow::Owned(err.to_string())),
-            }
-        }
+        Ok(_) => match receiver.await {
+            Ok(Ok(count)) => Ok(count),
+            Ok(Err(err)) => Err(err),
+            Err(err) => Err(Cow::Owned(err.to_string())),
+        },
 
-        Err(err) => {
-            Err(err)
-        }
+        Err(err) => Err(err),
     }
 }
