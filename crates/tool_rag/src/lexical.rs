@@ -4,11 +4,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-mod catalog;
-pub mod config;
-mod engine;
-mod lexical;
-mod model;
+pub(crate) struct LexicalTokenizer;
 
-pub use config::ToolRagConfig;
-pub use engine::ToolRagEngine;
+impl LexicalTokenizer {
+    pub fn tokenize(text: &str) -> Vec<String> {
+        todo!()
+    }
+}
+
+pub(crate) struct LexicalIndexer;

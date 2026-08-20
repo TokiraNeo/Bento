@@ -1,8 +1,8 @@
-<div align="center">
+<div style="text-align: center">
 
 # Bento
 
-> Place different tools in the compartments; open whichever one you need to search through it.
+> A lunchbox for tools — compartments, not a buffet; a switchboard, not a pile of adapters.
 
 **A tool-relay hub for AI agents and tool hosts.**
 
@@ -27,6 +27,8 @@ AI 正在进入游戏开发流程（建模、摆放、材质、动画），但�
 每对接一个 Agent × 一个宿主，就要重写一遍连接、协议、工具注册——这就是 **N×M 的组合爆炸**。
 
 **Bento 在中间加一层 Hub**：宿主只写一个薄插件把工具暴露出来，Agent 通过标准 MCP **零适配**即插即用，任何一端改动都不牵连另一端。
+
+对 Agent 来说，Bento 更像一位 **总机接线员**：手里有一本实时更新的黄页（工具检索）。你用大白话描述需求，她帮你查号、给你看说明书、替你转接到真正干活的宿主；危险操作还要先请示。
 
 ---
 
@@ -55,9 +57,10 @@ Agent 层（Codex / OpenCode / Cursor ...）
 
 ### 2. 在中间层对暴露做操作：RAG 渐进式工具加载
 
-一个 UE5 这样的宿主，工具集可能有数百上千个。把全部 schema 灌进 LLM 上下文，既不现实也浪费 token。
+一个 UE5 这样的宿主，工具集可能有数百上千个。把全部 schema 灌进 LLM 上下文，既不现实也浪费
+token——问题结构和搜索引擎一样：语料大到塞不进消费者的脑子。
 
-**让 LLM 自己「捞」工具，而不是「灌」给它。**
+**让 LLM 自己「搜」工具，而不是「灌」给它。结果页只给摘要，点进去才有全文。**
 
 ```
 Layer 1  bento.list_domains          → 域级目录，LLM 知道「存在什么」
@@ -65,8 +68,8 @@ Layer 2  bento.search_tools(query)   → 混合检索 Top-K，LLM 知道「该�
 Layer 3  bento.get_tool_schema(name) → 调用前取完整 schema，LLM 知道「怎么调」
 ```
 
-每个工具注册时携带 `name / description / input_schema / risk / domain / tags / example`，
-description 本身即为检索文本。Hub 只把少量候选工具暴露给 Agent，上下文自然瘦身。
+每个工具注册时携带 `name / description / input_schema / risk / domain / tags / example`， description 本身即为检索文本。Hub
+只把少量候选工具暴露给 Agent，上下文自然瘦身。
 
 ### 3. 过程式工具：与其封装一百个工具，不如给一个 `execute_code()`
 
@@ -83,19 +86,29 @@ blender.execute_script("""
 ```
 
 - 常驻工具目录因此极小，RAG 压力骤减；
-- RAG 检索的是**安全的高层封装工具**，长尾能力交给脚本执行；
-- `execute_script` 类工具**默认 `risk = high`**，走 Hub 侧强制审批。
+- RAG 检索的是 **安全的高层封装工具**，长尾能力交给脚本执行；
+- `execute_script` 类工具 **默认 `risk = high`**，走 Hub 侧强制审批。
 
 ---
 
 ## 工程布局
 
-| Crate | 职责 |
-|---|---|
-| `crates/protocol`（`bento-protocol`） | 宿主 ↔ Hub 的 WS + JSON-RPC 契约：类型与命令常量 |
-| `crates/host_server` | Hub 侧接收宿主连接、握手、工具注册与调用分发 |
-| `crates/agent_server` | 面向 Agent 的 MCP 服务端 |
-| `crates/core`（`bento-core`） | 组合上层：路由 · RAG · 审批 · 事件 · 配置 |
+```
+bento_core                         ← 组装根：创建各组件、注入端口
+  ├── bento_host_server            ← 宿主 WS：握手 / 注册 / 调用分发 / 断连清理
+  ├── bento_agent_server           ← Agent MCP：search_tools / get_schema / list_domains
+  └── bento_tool_rag               ← 内存工具目录 + 混合检索（词法 BM25 → 语义）
+  └── bento_protocol               ← 传输契约（JSON-RPC / ToolDefinition / 检索 DTO）
+```
+
+| Crate                 | 包名                 | 职责                                                                                        |
+|-----------------------|----------------------|---------------------------------------------------------------------------------------------|
+| `crates/protocol`     | `bento_protocol`     | 跨边界传输类型：宿主 JSON-RPC 命令、`ToolDefinition`、`ToolSearchQuery` / `ToolSearchHit`。 |
+| `crates/utility`      | `bento_utility`      | 进程内小工具（如 UUID）。                                                                   |
+| `crates/tool_rag`     | `bento_tool_rag`     | 纯内存工具索引：会话桶目录、词法倒排、检索快照。不落盘；宿主断连即清、进程重启即空。        |
+| `crates/host_server`  | `bento_host_server`  | 被动监听宿主 WS。通过 `ToolIndexSink` 端口登记 / 就绪 / 移除工具。                          |
+| `crates/agent_server` | `bento_agent_server` | 面向 Agent 的 MCP 服务端。通过 `ToolQuerySink` 端口检索。                                   |
+| `crates/core`         | `bento_core`         | 组装根：持有 `ToolRagEngine`，用薄适配器接到两个 server 的端口。运行时调用直达引擎。        |
 
 ## License
 

@@ -3,6 +3,7 @@
  * Copyright (C) 2026-present TokiraNeo <TokiraNeo@outlook.com>
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
+use async_trait::async_trait;
 use bento_agent_server::ToolQuerySink;
 use bento_protocol::tool::{ToolSearchHit, ToolSearchQuery};
 use bento_tool_rag::ToolRagEngine;
@@ -18,6 +19,7 @@ impl RagQuerySink {
     }
 }
 
+#[async_trait]
 impl ToolQuerySink for RagQuerySink {
     async fn search_tools(
         &self,

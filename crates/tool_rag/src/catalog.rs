@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 use crate::model::IndexedTool;
+use bento_protocol::tool::ToolDefinition;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -15,9 +16,14 @@ pub(super) struct ToolBucket {
 }
 
 impl ToolBucket {
-    pub fn new(namespace: String, tools: Vec<Arc<IndexedTool>>) -> Self {
+    pub fn new(namespace: &str, definitions: Vec<ToolDefinition>) -> Self {
+        let tools = definitions
+            .into_iter()
+            .map(|definition| Arc::new(IndexedTool::new(namespace, definition)))
+            .collect();
+
         Self {
-            namespace,
+            namespace: namespace.to_owned(),
             ready: false,
             tools,
         }
@@ -40,14 +46,20 @@ impl ToolCatalog {
         }
     }
 
-    pub fn replace(&self, session_id: String, bucket: ToolBucket) -> Result<(), Cow<'static, str>> {
+    pub fn replace(
+        &self,
+        session_id: String,
+        bucket: ToolBucket,
+    ) -> Result<usize, Cow<'static, str>> {
         let mut buckets = self.buckets.write().unwrap();
+
+        let len = bucket.tools.len();
 
         buckets.remove(&session_id);
 
         buckets.insert(session_id, bucket);
 
-        Ok(())
+        Ok(len)
     }
 
     pub fn mark_ready(&self, session_id: &str) -> Result<(), Cow<'static, str>> {
