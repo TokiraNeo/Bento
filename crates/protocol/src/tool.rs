@@ -88,24 +88,25 @@ pub struct ToolCallContent {
     pub text: String,
 }
 
-/// Tool hit for tool-rag-index.
-/// for example:
-/// ```json
-/// {
-///   "qualified_name": "blender.create_cube",
-///   "namespace": "blender",
-///   "name": "create_cube",
-///   "risk": "medium",
-///   "description": "Tool used to create a cube.",
-///   "domain": "modeling"
-/// }
-/// ```
+/// `bento.search_tools` 的查询参数。
 #[derive(Clone, Serialize, Deserialize)]
-pub struct ToolHit {
+pub struct ToolSearchQuery {
+    pub text: String,
+    pub top_k: usize,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub domain: Option<String>,
+}
+
+/// `bento.search_tools` 返回的工具。
+#[derive(Clone, Serialize, Deserialize)]
+pub struct ToolSearchHit {
     pub qualified_name: String,
-    pub namespace: String,
-    pub name: String,
-    pub risk: ToolRisk,
     pub description: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub domain: Option<String>,
 }

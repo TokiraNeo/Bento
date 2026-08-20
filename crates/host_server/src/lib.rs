@@ -4,14 +4,14 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-pub mod config;
+mod config;
 mod event;
 mod namespace;
 mod request_task;
-pub mod server;
+mod server;
 mod session;
-pub mod tool_index;
-mod utilities;
+mod tool_index;
 
 pub use config::HostServerConfig;
 pub use server::HostServer;
+pub use tool_index::ToolIndexSink;

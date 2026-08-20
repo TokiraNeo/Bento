@@ -5,8 +5,7 @@
  */
 use crate::namespace::HostNamespaceRegistry;
 use crate::request_task::RequestTaskManager;
-use crate::tool_index::{ToolIndexRequester, ToolIndexTask};
-use crate::utilities::create_uuid;
+use crate::tool_index::ToolIndexSink;
 use crate::{
     event::{HostEvent, HostEventBus, HostHandler, HostHandlerRegistry},
     session::{HostSession, HostSessionState},
@@ -18,17 +17,18 @@ use bento_protocol::jsonrpc::templates::{
     TJsonRpcResponse, from_notification, from_request, into_response,
 };
 use bento_protocol::jsonrpc::{JsonRpcError, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse};
-use bento_protocol::tool::ToolDefinition;
 use bento_protocol::versions::{BENTO_VERSION, MCP_PROTOCOL_VERSION};
 use bento_protocol::{
     commands::{host_command, tool_command},
     dispatch::{InboundFrame, OutboundFrame, parse_frame},
 };
+use bento_utility::generate_uuid;
 use futures_util::{SinkExt, StreamExt};
 use std::borrow::Cow;
+use std::sync::Arc;
 use tokio::{
     net::{TcpListener, TcpStream},
-    sync::{mpsc, oneshot, watch},
+    sync::{mpsc, watch},
 };
 use tokio_tungstenite::{
     WebSocketStream, accept_hdr_async,
@@ -47,7 +47,7 @@ use tracing::{error, warn};
     handlers,
     namespaces,
     request_manager,
-    index_requester,
+    index_sink,
     shutdown_signal
 ))]
 pub(super) async fn listen_connection(
@@ -57,7 +57,7 @@ pub(super) async fn listen_connection(
     handlers: HostHandlerRegistry,
     namespaces: HostNamespaceRegistry,
     request_manager: RequestTaskManager,
-    index_requester: ToolIndexRequester,
+    index_sink: Arc<dyn ToolIndexSink>,
     mut shutdown_signal: watch::Receiver<bool>,
 ) {
     loop {
@@ -74,11 +74,11 @@ pub(super) async fn listen_connection(
                         let clone_handlers = handlers.clone();
                         let clone_namespaces = namespaces.clone();
                         let clone_request_manager = request_manager.clone();
-                        let clone_index_requester = index_requester.clone();
+                        let clone_index_sink = index_sink.clone();
 
                         tokio::spawn(async move {
                             handle_connection(tcp, clone_token, clone_bus, clone_handlers, clone_namespaces, clone_request_manager,
-                            clone_index_requester).await;
+                            clone_index_sink).await;
                         });
                     }
 
@@ -91,15 +91,7 @@ pub(super) async fn listen_connection(
     }
 }
 
-#[tracing::instrument(skip(
-    tcp,
-    token,
-    bus,
-    handlers,
-    namespaces,
-    request_manager,
-    index_requester
-))]
+#[tracing::instrument(skip(tcp, token, bus, handlers, namespaces, request_manager, index_sink))]
 async fn handle_connection(
     tcp: TcpStream,
     token: String,
@@ -107,7 +99,7 @@ async fn handle_connection(
     handlers: HostHandlerRegistry,
     namespaces: HostNamespaceRegistry,
     request_manager: RequestTaskManager,
-    index_requester: ToolIndexRequester,
+    index_sink: Arc<dyn ToolIndexSink>,
 ) {
     let ws: WebSocketStream<TcpStream> = match accept_hdr_async(
         tcp,
@@ -139,7 +131,7 @@ async fn handle_connection(
         }
     };
 
-    let session_id = create_uuid();
+    let session_id = generate_uuid();
 
     let (mut writer, mut reader) = ws.split();
 
@@ -173,7 +165,7 @@ async fn handle_connection(
             &bus,
             &namespaces,
             &request_manager,
-            &index_requester,
+            &index_sink,
         )
         .await
         {
@@ -187,16 +179,8 @@ async fn handle_connection(
     request_manager.cancel_all_for_session(&session_id);
     handlers.remove(&session_id); // 释放sender
 
-    if let Err(err) = index_requester
-        .send(ToolIndexTask::Remove {
-            session_id: session_id.clone(),
-        })
-        .await
-    {
-        warn!(
-            "Failed to send Remove task for session {}: {}",
-            session_id, err
-        );
+    if let Err(err) = index_sink.remove(&session_id).await {
+        warn!("Failed to remove tools for session {}: {}", session_id, err);
     }
 
     namespaces.release(session.namespace.clone());
@@ -209,14 +193,14 @@ async fn handle_connection(
     bus.emit(HostEvent::HostClosed { session_id });
 }
 
-#[tracing::instrument(skip(session, msg, bus, namespaces, request_manager, index_requester))]
+#[tracing::instrument(skip(session, msg, bus, namespaces, request_manager, index_sink))]
 async fn handle_message(
     session: &mut HostSession,
     msg: Message,
     bus: &HostEventBus,
     namespaces: &HostNamespaceRegistry,
     request_manager: &RequestTaskManager,
-    index_requester: &ToolIndexRequester,
+    index_sink: &Arc<dyn ToolIndexSink>,
 ) -> bool {
     match msg {
         Message::Text(text) => {
@@ -228,14 +212,14 @@ async fn handle_message(
                         bus,
                         namespaces,
                         request_manager,
-                        index_requester,
+                        index_sink,
                     )
                     .await;
                 }
                 Err(err) => {
                     error!("Failed to parse inbound frame: {:?}", err);
 
-                    let id = create_uuid();
+                    let id = generate_uuid();
                     let response = JsonRpcResponse::new_error(id, err);
 
                     session
@@ -258,14 +242,14 @@ async fn handle_message(
     }
 }
 
-#[tracing::instrument(skip(frame, session, bus, namespaces, request_manager, index_requester))]
+#[tracing::instrument(skip(frame, session, bus, namespaces, request_manager, index_sink))]
 async fn handle_inbound_frame(
     frame: InboundFrame,
     session: &mut HostSession,
     bus: &HostEventBus,
     namespaces: &HostNamespaceRegistry,
     request_manager: &RequestTaskManager,
-    index_requester: &ToolIndexRequester,
+    index_sink: &Arc<dyn ToolIndexSink>,
 ) {
     match frame {
         InboundFrame::Request(request) => match (session.state, request.method.as_str()) {
@@ -273,7 +257,7 @@ async fn handle_inbound_frame(
                 handle_host_hello(session, request, bus, namespaces).await;
             }
             (HostSessionState::Helloed, tool_command::TOOLS_REGISTER) => {
-                handle_tool_register(session, request, bus, index_requester).await;
+                handle_tool_register(session, request, bus, index_sink).await;
             }
             (state, method) => {
                 warn!(
@@ -286,7 +270,7 @@ async fn handle_inbound_frame(
         InboundFrame::Notification(notification) => {
             match (session.state, notification.method.as_str()) {
                 (HostSessionState::Registered, host_command::HOST_READY) => {
-                    handle_host_ready(session, notification, bus, index_requester).await;
+                    handle_host_ready(session, notification, bus, index_sink).await;
                 }
                 (state, method) => {
                     warn!(
@@ -351,12 +335,12 @@ async fn handle_host_hello(
     }
 }
 
-#[tracing::instrument(skip(session, request, bus, index_requester))]
+#[tracing::instrument(skip(session, request, bus, index_sink))]
 async fn handle_tool_register(
     session: &mut HostSession,
     request: JsonRpcRequest,
     bus: &HostEventBus,
-    index_requester: &ToolIndexRequester,
+    index_sink: &Arc<dyn ToolIndexSink>,
 ) {
     match from_request::<ToolRegisterParams>(request) {
         Ok(rpc) => {
@@ -390,13 +374,9 @@ async fn handle_tool_register(
                     }
                 }
             } else {
-                let response = match handle_tool_replace(
-                    session.session_id.clone(),
-                    session.namespace.clone(),
-                    tools,
-                    index_requester,
-                )
-                .await
+                let response = match index_sink
+                    .replace(&session.session_id, &session.namespace, tools)
+                    .await
                 {
                     Ok(count) => {
                         session.state = HostSessionState::Registered;
@@ -446,24 +426,20 @@ async fn handle_tool_register(
     }
 }
 
-#[tracing::instrument(skip(session, notification, bus, index_requester))]
+#[tracing::instrument(skip(session, notification, bus, index_sink))]
 async fn handle_host_ready(
     session: &mut HostSession,
     notification: JsonRpcNotification,
     bus: &HostEventBus,
-    index_requester: &ToolIndexRequester,
+    index_sink: &Arc<dyn ToolIndexSink>,
 ) {
     match from_notification::<HostReadyParams>(notification) {
         Ok(_rpc) => {
             session.state = HostSessionState::Ready;
 
-            let task = ToolIndexTask::Ready {
-                session_id: session.session_id.clone(),
-            };
-
-            if let Err(err) = index_requester.send(task).await {
+            if let Err(err) = index_sink.ready(&session.session_id).await {
                 warn!(
-                    "Failed to send Ready task for session {}: {}",
+                    "Failed to mark session {} ready in tool index: {}",
                     session.session_id, err
                 );
             }
@@ -475,32 +451,5 @@ async fn handle_host_ready(
         Err(err) => {
             error!("Failed to cast notification: {:?}", err);
         }
-    }
-}
-
-#[tracing::instrument(skip(session_id, namespace, tools, index_requester))]
-async fn handle_tool_replace(
-    session_id: String,
-    namespace: String,
-    tools: Vec<ToolDefinition>,
-    index_requester: &ToolIndexRequester,
-) -> Result<usize, Cow<'static, str>> {
-    let (sender, receiver) = oneshot::channel();
-
-    let task = ToolIndexTask::Replace {
-        session_id,
-        namespace,
-        tools,
-        responder: sender,
-    };
-
-    match index_requester.send(task).await {
-        Ok(_) => match receiver.await {
-            Ok(Ok(count)) => Ok(count),
-            Ok(Err(err)) => Err(err),
-            Err(err) => Err(Cow::Owned(err.to_string())),
-        },
-
-        Err(err) => Err(err),
     }
 }

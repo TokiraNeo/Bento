@@ -10,15 +10,16 @@ use crate::config::HostServerConfig;
 use crate::event::{HostEvent, HostEventBus, HostHandlerRegistry};
 use crate::namespace::HostNamespaceRegistry;
 use crate::request_task::{RequestOutcome, RequestTask, RequestTaskManager};
-use crate::tool_index::ToolIndexRequester;
-use crate::utilities::create_uuid;
+use crate::tool_index::ToolIndexSink;
 use bento_protocol::commands::tool_command;
 use bento_protocol::dispatch::OutboundFrame;
 use bento_protocol::jsonrpc::params::ToolCallParams;
 use bento_protocol::jsonrpc::templates::{TJsonRpcRequest, into_request};
 use bento_protocol::jsonrpc::{JsonRpcRequest, JsonRpcResponse};
 use bento_protocol::versions::JSON_RPC_VERSION;
+use bento_utility::generate_uuid;
 use std::borrow::Cow;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::TcpListener;
 use tokio::sync::{broadcast, oneshot, watch};
@@ -55,7 +56,7 @@ pub struct HostServer {
 
     request_manager: RequestTaskManager,
 
-    index_requester: ToolIndexRequester,
+    tool_index_sink: Arc<dyn ToolIndexSink>,
 
     /// Shut down signal for worker
     shutdown_sender: watch::Sender<bool>,
@@ -63,7 +64,7 @@ pub struct HostServer {
 }
 
 impl HostServer {
-    pub fn new(config: HostServerConfig, index_requester: ToolIndexRequester) -> Self {
+    pub fn new(config: HostServerConfig, index_sink: Arc<dyn ToolIndexSink>) -> Self {
         let (sender, receiver) = watch::channel(false);
 
         Self {
@@ -72,7 +73,7 @@ impl HostServer {
             namespaces: HostNamespaceRegistry::new(),
             bus: HostEventBus::new(),
             request_manager: RequestTaskManager::new(),
-            index_requester,
+            tool_index_sink: index_sink,
             shutdown_sender: sender,
             shutdown_receiver: receiver,
         }
@@ -92,7 +93,7 @@ impl HostServer {
         let clone_handlers = self.handlers.clone();
         let clone_namespace = self.namespaces.clone();
         let clone_request_manager = self.request_manager.clone();
-        let clone_index_requester = self.index_requester.clone();
+        let clone_index_sink = self.tool_index_sink.clone();
         let shutdown_signal = self.shutdown_receiver.clone();
 
         tokio::spawn(async move {
@@ -103,7 +104,7 @@ impl HostServer {
                 clone_handlers,
                 clone_namespace,
                 clone_request_manager,
-                clone_index_requester,
+                clone_index_sink,
                 shutdown_signal,
             )
             .await;
@@ -186,7 +187,7 @@ impl HostServer {
     ) -> Result<JsonRpcResponse, Cow<'static, str>> {
         let request = into_request(TJsonRpcRequest::<ToolCallParams> {
             jsonrpc: JSON_RPC_VERSION.to_string(),
-            id: create_uuid(),
+            id: generate_uuid(),
             method: tool_command::TOOL_CALL.to_string(),
             params,
         });

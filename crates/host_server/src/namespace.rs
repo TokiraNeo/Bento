@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use crate::utilities::create_uuid_simple;
+use bento_utility::generate_uuid_simple;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -43,7 +43,7 @@ impl HostNamespaceRegistry {
         }
 
         // 通常来说，不会走到这里。
-        let namespace = format!("{}#{}", host_name, create_uuid_simple());
+        let namespace = format!("{}#{}", host_name, generate_uuid_simple());
         map.insert(namespace.clone(), session_id);
         namespace
     }

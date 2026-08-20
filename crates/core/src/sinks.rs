@@ -4,10 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-mod catalog;
-pub mod config;
-pub mod engine;
-pub mod model;
+mod rag_index_sink;
+mod rag_query_sink;
 
-pub use config::ToolRagConfig;
-pub use engine::ToolRagEngine;
+pub use rag_index_sink::RagIndexSink;
+pub use rag_query_sink::RagQuerySink;
