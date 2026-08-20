@@ -1,0 +1,13 @@
+[package]
+name = "bento_utility"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+license-file.workspace = true
+readme.workspace = true
+authors.workspace = true
+description.workspace = true
+repository.workspace = true
+
+[dependencies]
+uuid = { version = "1.24.1", features = ["v4"] }
