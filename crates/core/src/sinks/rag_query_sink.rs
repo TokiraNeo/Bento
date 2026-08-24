@@ -31,8 +31,4 @@ impl ToolQuerySink for RagQuerySink {
     async fn get_tool_schema(&self, qualified_name: &str) -> Result<Value, Cow<'static, str>> {
         self.0.get_tool_schema(qualified_name)
     }
-
-    async fn list_domains(&self) -> Result<Vec<String>, Cow<'static, str>> {
-        self.0.list_domains()
-    }
 }

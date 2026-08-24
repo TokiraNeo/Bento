@@ -13,17 +13,22 @@ pub(crate) struct ScoredHit {
     pub score: f64,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) enum ToolDocField {
+    Name,
+    Tags,
+    Description,
+}
+
 pub(crate) struct SearchFields<'a> {
     pub name: &'a str,
-    pub tags: &'a [String],
-    pub domain: Option<&'a str>,
+    pub tags: &'a str,
     pub description: &'a str,
-    pub example: Option<&'a str>,
 }
 
 #[derive(Clone)]
 pub(crate) struct IndexedTool {
-    pub qualified_name: String,
+    pub name: String,
     pub namespace: String,
     pub definition: ToolDefinition,
 }
@@ -31,7 +36,7 @@ pub(crate) struct IndexedTool {
 impl IndexedTool {
     pub fn new(namespace: &str, definition: ToolDefinition) -> Self {
         Self {
-            qualified_name: format!("{}.{}", namespace, definition.name.as_str()),
+            name: definition.name.clone(),
             namespace: namespace.to_string(),
             definition,
         }
@@ -39,19 +44,16 @@ impl IndexedTool {
 
     pub fn to_hit(&self) -> ToolSearchHit {
         ToolSearchHit {
-            qualified_name: self.qualified_name.clone(),
+            qualified_name: format!("{}.{}", self.namespace, self.name),
             description: self.definition.description.clone(),
-            domain: self.definition.domain.clone(),
         }
     }
 
     pub fn search_fields(&self) -> SearchFields {
         SearchFields {
             name: &self.definition.name,
-            tags: &self.definition.tags,
-            domain: self.definition.domain.as_deref(),
+            tags: self.definition.tags.join(",").as_str(),
             description: &self.definition.description,
-            example: self.definition.example.as_deref(),
         }
     }
 }

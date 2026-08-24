@@ -9,7 +9,8 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
-pub(super) struct ToolBucket {
+#[derive(Clone)]
+pub(crate) struct ToolBucket {
     pub namespace: String,
     ready: bool,
     pub tools: Vec<Arc<IndexedTool>>,
@@ -34,7 +35,7 @@ impl ToolBucket {
     }
 }
 
-pub(super) struct ToolCatalog {
+pub(crate) struct ToolCatalog {
     /// session_id - ToolBucket
     buckets: RwLock<HashMap<String, ToolBucket>>,
 }
@@ -85,5 +86,14 @@ impl ToolCatalog {
         buckets.remove(session_id);
 
         Ok(())
+    }
+
+    pub fn ready_tools(&self) -> Vec<Arc<IndexedTool>> {
+        let buckets = self.buckets.read().unwrap();
+        buckets
+            .values()
+            .filter(|b| b.ready)
+            .flat_map(|b| b.tools.iter().cloned())
+            .collect()
     }
 }

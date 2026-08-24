@@ -18,7 +18,4 @@ pub trait ToolQuerySink: Send + Sync {
 
     /// `bento.get_tool_schema`：取回完整 input_schema。
     async fn get_tool_schema(&self, qualified_name: &str) -> Result<Value, Cow<'static, str>>;
-
-    /// `bento.list_domains`：列出当前在线工具的 domain。
-    async fn list_domains(&self) -> Result<Vec<String>, Cow<'static, str>>;
 }

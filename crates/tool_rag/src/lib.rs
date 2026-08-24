@@ -9,6 +9,7 @@ pub mod config;
 mod engine;
 mod lexical;
 mod model;
+mod snapshot;
 
 pub use config::ToolRagConfig;
 pub use engine::ToolRagEngine;

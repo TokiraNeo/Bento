@@ -27,9 +27,7 @@ pub enum ToolRisk {
 ///     }
 ///   },
 ///   "risk": "medium",
-///   "domain": "Modeling",
-///   "tags": ["tag1", "tag2"],
-///   "example": "my_tool(...)"
+///   "tags": ["tag1", "tag2"]
 /// }
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,13 +49,7 @@ pub struct ToolDefinition {
     pub risk: ToolRisk,
 
     #[serde(default)]
-    pub domain: Option<String>,
-
-    #[serde(default)]
     pub tags: Vec<String>,
-
-    #[serde(default)]
-    pub example: Option<String>,
 }
 
 impl ToolDefinition {
@@ -106,7 +98,4 @@ pub struct ToolSearchQuery {
 pub struct ToolSearchHit {
     pub qualified_name: String,
     pub description: String,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub domain: Option<String>,
 }

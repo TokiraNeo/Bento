@@ -17,7 +17,7 @@ use bento_protocol::jsonrpc::params::ToolCallParams;
 use bento_protocol::jsonrpc::templates::{TJsonRpcRequest, into_request};
 use bento_protocol::jsonrpc::{JsonRpcRequest, JsonRpcResponse};
 use bento_protocol::versions::JSON_RPC_VERSION;
-use bento_utility::generate_uuid;
+use bento_utility::generate_uuid_simple;
 use std::borrow::Cow;
 use std::sync::Arc;
 use std::time::Duration;
@@ -187,7 +187,7 @@ impl HostServer {
     ) -> Result<JsonRpcResponse, Cow<'static, str>> {
         let request = into_request(TJsonRpcRequest::<ToolCallParams> {
             jsonrpc: JSON_RPC_VERSION.to_string(),
-            id: generate_uuid(),
+            id: generate_uuid_simple(),
             method: tool_command::TOOL_CALL.to_string(),
             params,
         });

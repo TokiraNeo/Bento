@@ -4,12 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-pub(crate) struct LexicalTokenizer;
+mod indexer;
+mod tokenizer;
 
-impl LexicalTokenizer {
-    pub fn tokenize(text: &str) -> Vec<String> {
-        todo!()
-    }
-}
-
-pub(crate) struct LexicalIndexer;
+pub(crate) use indexer::LexicalIndexer;
+pub(crate) use tokenizer::LexicalTokenizer;

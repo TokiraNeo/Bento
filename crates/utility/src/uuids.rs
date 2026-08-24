@@ -13,3 +13,21 @@ pub fn generate_uuid() -> String {
 pub fn generate_uuid_simple() -> String {
     Uuid::new_v4().as_simple().to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_uuid_v4() {
+        {
+            let id = generate_uuid_simple();
+            println!("uuid-v4: {}", id);
+        }
+
+        {
+            let id = generate_uuid_simple();
+            println!("uuid-v4-simple: {}", id);
+        }
+    }
+}

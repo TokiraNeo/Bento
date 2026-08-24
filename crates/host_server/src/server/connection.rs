@@ -22,7 +22,7 @@ use bento_protocol::{
     commands::{host_command, tool_command},
     dispatch::{InboundFrame, OutboundFrame, parse_frame},
 };
-use bento_utility::generate_uuid;
+use bento_utility::generate_uuid_simple;
 use futures_util::{SinkExt, StreamExt};
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -131,7 +131,7 @@ async fn handle_connection(
         }
     };
 
-    let session_id = generate_uuid();
+    let session_id = generate_uuid_simple();
 
     let (mut writer, mut reader) = ws.split();
 
@@ -219,7 +219,7 @@ async fn handle_message(
                 Err(err) => {
                     error!("Failed to parse inbound frame: {:?}", err);
 
-                    let id = generate_uuid();
+                    let id = generate_uuid_simple();
                     let response = JsonRpcResponse::new_error(id, err);
 
                     session
