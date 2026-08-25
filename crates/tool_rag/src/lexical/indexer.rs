@@ -258,7 +258,11 @@ mod tests {
 
     fn docs() -> Vec<Arc<IndexedTool>> {
         vec![
-            tool(r#"createCube"#, r#"crate a cube."#, &[r#"modeling"#, r#"cube"#]),
+            tool(
+                r#"createCube"#,
+                r#"crate a cube."#,
+                &[r#"modeling"#, r#"cube"#],
+            ),
             tool(r#"edit"#, r#"编辑立方体"#, &[r#"modeling"#, r#"cube"#]),
             tool(r#"export_1"#, r#"export a cube"#, &[r#"export"#, r#"cube"#]),
             tool(r#"export_2"#, r#"export a fbx"#, &[r#"assert"#]),
@@ -268,17 +272,9 @@ mod tests {
 
     #[test]
     fn test_search() {
-        {
-            let result = index_with(docs(), 3).search("cube");
-            println!("{:?}", result);
-        }
-        {
-            let result = index_with(docs(), 3).search("方体");
-            println!("{:?}", result);
-        }
-        {
-            let result = index_with(docs(), 3).search("export assert");
-            println!("{:?}", result);
-        }
+        let indexer = index_with(docs(), 3);
+        println!("{:?}", indexer.search("cube"));
+        println!("{:?}", indexer.search("方体"));
+        println!("{:?}", indexer.search("export assert"));
     }
 }
