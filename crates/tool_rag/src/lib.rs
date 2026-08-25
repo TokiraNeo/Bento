@@ -13,3 +13,4 @@ mod snapshot;
 
 pub use config::ToolRagConfig;
 pub use engine::ToolRagEngine;
+pub use model::ToolDocField;

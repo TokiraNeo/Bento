@@ -3,26 +3,29 @@
  * Copyright (C) 2026-present TokiraNeo <TokiraNeo@outlook.com>
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-
 use bento_protocol::tool::{ToolDefinition, ToolSearchHit};
+use serde::{Deserialize, Serialize};
 
 pub(crate) type ToolDocId = usize;
 
-pub(crate) struct ScoredHit {
-    pub doc_id: ToolDocId,
-    pub score: f64,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub(crate) enum ToolDocField {
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ToolDocField {
     Name,
     Tags,
     Description,
 }
 
+/// 词法通道的排序结果
+#[derive(Debug)]
+pub(crate) struct ScoredHit {
+    pub doc_id: ToolDocId,
+    pub score: f32,
+}
+
 pub(crate) struct SearchFields<'a> {
     pub name: &'a str,
-    pub tags: &'a str,
+    pub tags: &'a [String],
     pub description: &'a str,
 }
 
@@ -52,7 +55,7 @@ impl IndexedTool {
     pub fn search_fields(&self) -> SearchFields {
         SearchFields {
             name: &self.definition.name,
-            tags: self.definition.tags.join(",").as_str(),
+            tags: &self.definition.tags,
             description: &self.definition.description,
         }
     }

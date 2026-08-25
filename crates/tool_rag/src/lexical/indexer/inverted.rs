@@ -4,13 +4,14 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 use crate::model::{ToolDocField, ToolDocId};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
+/// 词在某文档某字段上的命中记录。
 pub(super) struct Posting {
     pub doc_id: ToolDocId,
     pub field: ToolDocField,
 
-    /// term frequency: 词出现的次数
+    /// tf：该字段内该词出现次数
     pub tf: usize,
 }
 
@@ -24,9 +25,14 @@ impl Posting {
     }
 }
 
-/// 倒排表
 pub(super) struct InvertedTable {
     map: HashMap<String, Vec<Posting>>,
+}
+
+impl Default for InvertedTable {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl InvertedTable {
@@ -53,16 +59,5 @@ impl InvertedTable {
 
     pub fn get(&self, term: &str) -> &[Posting] {
         self.map.get(term).map(Vec::as_slice).unwrap_or(&[])
-    }
-
-    /// document frequency: 词在多少篇不同文档出现
-    pub fn df(&self, term: &str) -> usize {
-        let mut set = HashSet::new();
-
-        for p in self.get(term) {
-            set.insert(p.doc_id);
-        }
-
-        set.len()
     }
 }

@@ -7,59 +7,278 @@
 mod inverted;
 
 use crate::ToolRagConfig;
+use crate::config::ToolRagWeights;
 use crate::lexical::LexicalTokenizer;
 use crate::lexical::indexer::inverted::InvertedTable;
-use crate::model::{IndexedTool, SearchFields, ToolDocField, ToolDocId};
-use std::collections::HashMap;
+use crate::model::{IndexedTool, ScoredHit, ToolDocField, ToolDocId};
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
+/// 词法通道：倒排 + BM25F。`docs[i]` 的编号即 `ToolDocId`。
 pub(crate) struct LexicalIndexer {
     inverted_table: InvertedTable,
+
+    /// dl(d)：文档 d 的加权长度 = Σ (字段词元数 × 字段权重)
+    doc_weights: Vec<f32>,
+
+    /// avg_dl：dl 的均值；空库或全 0 时为 1，避免 norm 除零
+    avg_dl: f32,
+
+    /// N：文档总数
+    count: usize,
+
+    /// 字段权重、k1(wfs)、b(lp)；构建时拷贝，与 dl 使用同一套
+    weights: ToolRagWeights,
+
+    /// 返回的最大命中数
+    candidate: usize,
 }
 
 impl Default for LexicalIndexer {
     fn default() -> Self {
         Self {
-            inverted_table: InvertedTable::new(),
+            inverted_table: InvertedTable::default(),
+            doc_weights: Vec::default(),
+            avg_dl: 1.0,
+            count: 0,
+            weights: ToolRagWeights::default(),
+            candidate: 3,
         }
     }
 }
 
 impl LexicalIndexer {
-    pub fn build(docs: &Vec<Arc<IndexedTool>>, config: &ToolRagConfig) -> Self {
-        let inverted_table = Self::build_inverted_table(docs);
-
-        Self { inverted_table }
-    }
-
-    fn build_inverted_table(docs: &Vec<Arc<IndexedTool>>) -> InvertedTable {
+    pub fn build(docs: &[Arc<IndexedTool>], config: &ToolRagConfig) -> Self {
+        let count = docs.len();
+        let mut doc_weights: Vec<f32> = vec![0.0; count];
         let mut inverted_table = InvertedTable::new();
+        let weights = config.weights.clone();
+        let candidate = config.candidate;
 
-        for i in 0..docs.len() {
-            let fields = docs[i].search_fields();
+        for (index, tool) in docs.iter().enumerate() {
+            let fields = tool.search_fields();
 
             // name
-            inverted_table.insert(
-                i,
+            Self::index_field(
+                &mut doc_weights,
+                &mut inverted_table,
+                index,
                 ToolDocField::Name,
-                LexicalTokenizer::tokenize(fields.name),
-            );
-
-            // tags
-            inverted_table.insert(
-                i,
-                ToolDocField::Tags,
-                LexicalTokenizer::tokenize(fields.tags),
+                fields.name,
+                field_weight(&weights, ToolDocField::Name),
             );
 
             // description
-            inverted_table.insert(
-                i,
+            Self::index_field(
+                &mut doc_weights,
+                &mut inverted_table,
+                index,
                 ToolDocField::Description,
-                LexicalTokenizer::tokenize(fields.description),
+                fields.description,
+                field_weight(&weights, ToolDocField::Description),
             );
+
+            // tags
+            for tag in fields.tags {
+                Self::index_field(
+                    &mut doc_weights,
+                    &mut inverted_table,
+                    index,
+                    ToolDocField::Tags,
+                    tag,
+                    field_weight(&weights, ToolDocField::Tags),
+                );
+            }
         }
 
-        inverted_table
+        let sum: f32 = doc_weights.iter().sum();
+        let avg_dw = if count == 0 || sum == 0.0 {
+            1.0
+        } else {
+            sum / (count as f32)
+        };
+
+        Self {
+            inverted_table,
+            doc_weights,
+            avg_dl: avg_dw,
+            count,
+            weights,
+            candidate,
+        }
+    }
+
+    /// BM25F：score(d,q) = Σ_t IDF(t) × norm(tf'(t,d), dl(d))
+    pub fn search(&self, query: &str) -> Vec<ScoredHit> {
+        let tokens = LexicalTokenizer::tokenize(query);
+        if tokens.is_empty() || self.is_empty() {
+            return Vec::new();
+        }
+
+        // 每篇文档的得分
+        let mut scores: HashMap<ToolDocId, f32> = HashMap::new();
+
+        for t in &tokens {
+            let tfs = self.tf_by_doc(t);
+            if tfs.is_empty() {
+                continue;
+            }
+
+            let idf = self.idf(t);
+            for (doc_id, tf) in tfs {
+                // score(d) += IDF(t) × norm(tf', dl)
+                let contrib = idf * self.norm(self.doc_weights[doc_id], tf);
+                *scores.entry(doc_id).or_insert(0.0) += contrib;
+            }
+        }
+
+        let mut hits: Vec<ScoredHit> = scores
+            .into_iter()
+            .map(|(doc_id, score)| ScoredHit { doc_id, score })
+            .collect();
+
+        hits.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        hits.truncate(self.candidate);
+
+        hits
+    }
+
+    fn index_field(
+        doc_weights: &mut [f32],
+        inverted_table: &mut InvertedTable,
+        index: usize,
+        field: ToolDocField,
+        text: &str,
+        weight: f32,
+    ) {
+        let tokens = LexicalTokenizer::tokenize(text);
+
+        if let Some(w) = doc_weights.get_mut(index) {
+            let v = weight * (tokens.len() as f32);
+            *w += v;
+        }
+
+        inverted_table.insert(index, field, tokens);
+    }
+
+    /// df(t)：term 出现在多少篇不同文档里
+    fn df(&self, term: &str) -> usize {
+        let mut set = HashSet::new();
+
+        for p in self.inverted_table.get(term) {
+            set.insert(p.doc_id);
+        }
+
+        set.len()
+    }
+
+    /// tf'(t,d) = Σ posting tf × w_field
+    fn tf_by_doc(&self, term: &str) -> HashMap<ToolDocId, f32> {
+        let mut tfs: HashMap<ToolDocId, f32> = HashMap::new();
+
+        let postings = self.inverted_table.get(term);
+
+        for p in postings {
+            let tf = tfs.entry(p.doc_id).or_insert(0.0);
+            *tf += (p.tf as f32) * field_weight(&self.weights, p.field);
+        }
+
+        tfs
+    }
+
+    /// IDF(t) = ln((N - df + 0.5) / (df + 0.5) + 1)，越大越稀有
+    fn idf(&self, term: &str) -> f32 {
+        let seen = self.df(term);
+        if seen == 0 {
+            return 0.0;
+        }
+
+        let n = self.count as f32;
+        let df = seen as f32;
+
+        let idf = ((n - df + 0.5) / (df + 0.5) + 1.0).ln();
+
+        idf
+    }
+
+    /// norm = tf'×(k1+1) / (tf' + k1×(1 - b + b×dl/avgdl))
+    fn norm(&self, dl: f32, tf: f32) -> f32 {
+        let k1 = self.weights.k1;
+        let b = self.weights.b;
+        let avg_dl = self.avg_dl;
+
+        let up = tf * (k1 + 1.0);
+        let down = tf + k1 * (1.0 - b + b * (dl / avg_dl));
+
+        up / down
+    }
+
+    fn is_empty(&self) -> bool {
+        self.count == 0
+    }
+}
+
+/// posting 字段权重；缺键时按 1.0，避免下标 panic。
+fn field_weight(weights: &ToolRagWeights, field: ToolDocField) -> f32 {
+    weights.field_weight(field)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bento_protocol::tool::ToolDefinition;
+
+    fn tool(name: &str, description: &str, tags: &[&str]) -> Arc<IndexedTool> {
+        Arc::new(IndexedTool::new(
+            "blender",
+            ToolDefinition {
+                name: name.into(),
+                description: description.into(),
+                input_schema: serde_json::json!({ "type": "object" }),
+                risk: Default::default(),
+                tags: tags.iter().map(|s| s.to_string()).collect(),
+            },
+        ))
+    }
+
+    fn index_with(docs: Vec<Arc<IndexedTool>>, candidate: usize) -> LexicalIndexer {
+        let mut config = ToolRagConfig::default();
+        config.candidate = candidate;
+        LexicalIndexer::build(&docs, &config)
+    }
+
+    fn index(docs: Vec<Arc<IndexedTool>>) -> LexicalIndexer {
+        index_with(docs, 5)
+    }
+
+    fn docs() -> Vec<Arc<IndexedTool>> {
+        vec![
+            tool(r#"createCube"#, r#"crate a cube."#, &[r#"modeling"#, r#"cube"#]),
+            tool(r#"edit"#, r#"编辑立方体"#, &[r#"modeling"#, r#"cube"#]),
+            tool(r#"export_1"#, r#"export a cube"#, &[r#"export"#, r#"cube"#]),
+            tool(r#"export_2"#, r#"export a fbx"#, &[r#"assert"#]),
+            tool(r#"tool"#, r#"export a assert"#, &[r#"utility"#]),
+        ]
+    }
+
+    #[test]
+    fn test_search() {
+        {
+            let result = index_with(docs(), 3).search("cube");
+            println!("{:?}", result);
+        }
+        {
+            let result = index_with(docs(), 3).search("方体");
+            println!("{:?}", result);
+        }
+        {
+            let result = index_with(docs(), 3).search("export assert");
+            println!("{:?}", result);
+        }
     }
 }
