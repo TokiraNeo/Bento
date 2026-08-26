@@ -9,5 +9,5 @@ license = "GPL-3.0-or-later"
 license-file = "LICENSE"
 readme = "README.md"
 authors = ["TokiraNeo <TokiraNeo@outlook.com>"]
-description = "A tool-relay hub for AI agents and tool hosts."
+description = "A tool search engine for AI Agents."
 repository = "https://github.com/TokiraNeo/Bento"
