@@ -6,7 +6,7 @@
 
 mod inverted;
 
-use crate::model::{IndexedTool, ScoredHit, ToolDocField, ToolDocId};
+use crate::model::{IndexedTool, SearchHit, ToolDocField, ToolDocId};
 use crate::retrieve::lexical::{LexicalRetrieveConfig, LexicalTokenizer};
 use inverted::InvertedTable;
 use std::collections::{HashMap, HashSet};
@@ -96,7 +96,7 @@ impl LexicalIndexer {
     }
 
     /// BM25F： score(d,q) = Σ_t IDF(t) × norm(tf'(t,d), dl(d))
-    pub fn search(&self, query: &str) -> Vec<ScoredHit> {
+    pub fn search(&self, query: &str) -> Vec<SearchHit> {
         let tokens = LexicalTokenizer::tokenize(query);
         if tokens.is_empty() || self.is_empty() {
             return Vec::new();
@@ -119,9 +119,9 @@ impl LexicalIndexer {
             }
         }
 
-        let mut hits: Vec<ScoredHit> = scores
+        let mut hits: Vec<SearchHit> = scores
             .into_iter()
-            .map(|(doc_id, score)| ScoredHit { doc_id, score })
+            .map(|(doc_id, score)| SearchHit { doc_id, score })
             .collect();
 
         hits.sort_by(|a, b| {

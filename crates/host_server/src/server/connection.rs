@@ -300,9 +300,11 @@ async fn handle_host_hello(
     match from_request::<HostHelloParams>(request) {
         Ok(rpc) => {
             // Register new namespace for host
-            let namespace = namespaces.register(rpc.params.host_name, session.session_id.clone());
+            let namespace =
+                namespaces.register(rpc.params.host_name.clone(), session.session_id.clone());
 
             session.state = HostSessionState::Helloed;
+            session.name = rpc.params.host_name;
             session.namespace = namespace.clone();
 
             // Broadcast host.hello event
@@ -375,7 +377,12 @@ async fn handle_tool_register(
                 }
             } else {
                 let response = match index_sink
-                    .replace(&session.session_id, &session.namespace, tools)
+                    .replace(
+                        &session.session_id,
+                        &session.name,
+                        &session.namespace,
+                        tools,
+                    )
                     .await
                 {
                     Ok(count) => {

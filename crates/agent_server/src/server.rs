@@ -15,9 +15,9 @@ pub struct AgentServer {
 }
 
 impl AgentServer {
-    pub fn new(config: AgentServerConfig, tool_query: Arc<dyn ToolQuerySink>) -> Self {
+    pub fn new(config: &AgentServerConfig, tool_query: Arc<dyn ToolQuerySink>) -> Self {
         Self {
-            config,
+            config: config.clone(),
             tool_query_sink: tool_query,
         }
     }

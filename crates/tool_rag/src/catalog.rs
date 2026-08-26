@@ -11,19 +11,21 @@ use std::sync::{Arc, RwLock};
 
 #[derive(Clone)]
 pub(crate) struct ToolBucket {
+    pub host_name: String,
     pub namespace: String,
     ready: bool,
     pub tools: Vec<Arc<IndexedTool>>,
 }
 
 impl ToolBucket {
-    pub fn new(namespace: &str, definitions: Vec<ToolDefinition>) -> Self {
+    pub fn new(host_name: &str, namespace: &str, definitions: Vec<ToolDefinition>) -> Self {
         let tools = definitions
             .into_iter()
-            .map(|definition| Arc::new(IndexedTool::new(namespace, definition)))
+            .map(|definition| Arc::new(IndexedTool::new(host_name, namespace, definition)))
             .collect();
 
         Self {
+            host_name: host_name.to_owned(),
             namespace: namespace.to_owned(),
             ready: false,
             tools,

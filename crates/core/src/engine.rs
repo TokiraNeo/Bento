@@ -20,13 +20,13 @@ pub(super) struct CoreEngine {
 
 impl CoreEngine {
     pub fn new(config: CoreConfig) -> Self {
-        let tool_engine = Arc::new(ToolRagEngine::new(config.tool_rag));
+        let tool_engine = Arc::new(ToolRagEngine::new(&config.tool_rag));
 
         let tool_index_sink = Arc::new(RagIndexSink::new(tool_engine.clone()));
-        let host_server = Arc::new(HostServer::new(config.host_server, tool_index_sink));
+        let host_server = Arc::new(HostServer::new(&config.host_server, tool_index_sink));
 
-        let tool_query_sink = Arc::new(RagQuerySink::new(tool_engine.clone()));
-        let agent_server = Arc::new(AgentServer::new(config.agent_server, tool_query_sink));
+        let tool_query_sink = Arc::new(RagQuerySink::new(tool_engine.clone(), host_server.clone()));
+        let agent_server = Arc::new(AgentServer::new(&config.agent_server, tool_query_sink));
 
         Self {
             protocol_version: config.protocol_version,

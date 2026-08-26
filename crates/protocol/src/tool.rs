@@ -95,7 +95,7 @@ pub struct ToolSearchQuery {
 
 /// `bento.search_tools` 返回的工具。
 #[derive(Clone, Serialize, Deserialize)]
-pub struct ToolSearchHit {
+pub struct ToolSearchResult {
     pub qualified_name: String,
     pub description: String,
 }

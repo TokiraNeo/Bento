@@ -6,7 +6,7 @@
 use crate::catalog::{ToolBucket, ToolCatalog};
 use crate::config::ToolRagConfig;
 use crate::snapshot::SearchSnapshot;
-use bento_protocol::tool::{ToolDefinition, ToolSearchHit, ToolSearchQuery};
+use bento_protocol::tool::{ToolDefinition, ToolSearchQuery, ToolSearchResult};
 use serde_json::Value;
 use std::borrow::Cow;
 use std::sync::{Arc, RwLock};
@@ -18,9 +18,9 @@ pub struct ToolRagEngine {
 }
 
 impl ToolRagEngine {
-    pub fn new(config: ToolRagConfig) -> Self {
+    pub fn new(config: &ToolRagConfig) -> Self {
         Self {
-            config,
+            config: config.clone(),
             catalog: ToolCatalog::new(),
             snapshot: RwLock::default(),
         }
@@ -29,12 +29,14 @@ impl ToolRagEngine {
     pub async fn replace_host_tools(
         &self,
         session_id: &str,
+        name: &str,
         namespace: &str,
         tools: Vec<ToolDefinition>,
     ) -> Result<usize, Cow<'static, str>> {
-        let count = self
-            .catalog
-            .replace(session_id.to_owned(), ToolBucket::new(namespace, tools))?;
+        let count = self.catalog.replace(
+            session_id.to_owned(),
+            ToolBucket::new(name, namespace, tools),
+        )?;
         self.rebuild_snapshot();
         Ok(count)
     }
@@ -54,7 +56,7 @@ impl ToolRagEngine {
     pub async fn search_tools(
         &self,
         query: ToolSearchQuery,
-    ) -> Result<Vec<ToolSearchHit>, Cow<'static, str>> {
+    ) -> Result<Vec<ToolSearchResult>, Cow<'static, str>> {
         todo!()
     }
 

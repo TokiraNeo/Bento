@@ -23,11 +23,12 @@ impl ToolIndexSink for RagIndexSink {
     async fn replace(
         &self,
         session_id: &str,
+        name: &str,
         namespace: &str,
         tools: Vec<ToolDefinition>,
     ) -> Result<usize, Cow<'static, str>> {
         self.0
-            .replace_host_tools(session_id, namespace, tools)
+            .replace_host_tools(session_id, name, namespace, tools)
             .await
     }
 

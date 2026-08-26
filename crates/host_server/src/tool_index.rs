@@ -13,6 +13,7 @@ pub trait ToolIndexSink: Send + Sync {
     async fn replace(
         &self,
         session_id: &str,
+        name: &str,
         namespace: &str,
         tools: Vec<ToolDefinition>,
     ) -> Result<usize, Cow<'static, str>>;

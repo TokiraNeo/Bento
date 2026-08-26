@@ -64,11 +64,11 @@ pub struct HostServer {
 }
 
 impl HostServer {
-    pub fn new(config: HostServerConfig, index_sink: Arc<dyn ToolIndexSink>) -> Self {
+    pub fn new(config: &HostServerConfig, index_sink: Arc<dyn ToolIndexSink>) -> Self {
         let (sender, receiver) = watch::channel(false);
 
         Self {
-            config,
+            config: config.clone(),
             handlers: HostHandlerRegistry::new(),
             namespaces: HostNamespaceRegistry::new(),
             bus: HostEventBus::new(),

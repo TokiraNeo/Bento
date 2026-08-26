@@ -8,12 +8,12 @@ use serde::{Deserialize, Serialize};
 /// 精确通道：整串匹配 `qualified_name`。
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ExactRetrieveConfig {
-    /// 精确命中最多返回几条（同名冲突时）
+    /// 精确命中最多返回几条
     pub candidate: usize,
 }
 
 impl Default for ExactRetrieveConfig {
     fn default() -> Self {
-        Self { candidate: 4 }
+        Self { candidate: 3 }
     }
 }

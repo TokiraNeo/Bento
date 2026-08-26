@@ -24,6 +24,7 @@ pub(super) enum HostSessionState {
 }
 
 pub(super) struct HostSession {
+    pub name: String,
     pub session_id: String,
     pub state: HostSessionState,
     pub handler: HostHandler,
@@ -33,6 +34,7 @@ pub(super) struct HostSession {
 impl HostSession {
     pub fn new(session_id: String, handler: HostHandler) -> Self {
         Self {
+            name: String::new(),
             session_id,
             state: HostSessionState::Connecting,
             handler,

@@ -5,17 +5,26 @@
  */
 use async_trait::async_trait;
 use bento_agent_server::ToolQuerySink;
-use bento_protocol::tool::{ToolSearchHit, ToolSearchQuery};
+use bento_host_server::HostServer;
+use bento_protocol::jsonrpc::JsonRpcResponse;
+use bento_protocol::tool::{ToolSearchQuery, ToolSearchResult};
 use bento_tool_rag::ToolRagEngine;
 use serde_json::Value;
 use std::borrow::Cow;
 use std::sync::Arc;
+use std::time::Duration;
 
-pub struct RagQuerySink(Arc<ToolRagEngine>);
+pub struct RagQuerySink {
+    tool_engine: Arc<ToolRagEngine>,
+    host_server: Arc<HostServer>,
+}
 
 impl RagQuerySink {
-    pub fn new(engine: Arc<ToolRagEngine>) -> Self {
-        Self(engine)
+    pub fn new(tool_engine: Arc<ToolRagEngine>, host_server: Arc<HostServer>) -> Self {
+        Self {
+            tool_engine,
+            host_server,
+        }
     }
 }
 
@@ -24,11 +33,19 @@ impl ToolQuerySink for RagQuerySink {
     async fn search_tools(
         &self,
         query: ToolSearchQuery,
-    ) -> Result<Vec<ToolSearchHit>, Cow<'static, str>> {
-        self.0.search_tools(query).await
+    ) -> Result<Vec<ToolSearchResult>, Cow<'static, str>> {
+        self.tool_engine.search_tools(query).await
     }
 
     async fn get_tool_schema(&self, qualified_name: &str) -> Result<Value, Cow<'static, str>> {
-        self.0.get_tool_schema(qualified_name)
+        self.tool_engine.get_tool_schema(qualified_name)
+    }
+
+    async fn call_tool(
+        &self,
+        qualified_name: &str,
+        timeout: Duration,
+    ) -> Result<JsonRpcResponse, Cow<'static, str>> {
+        todo!()
     }
 }

@@ -3,7 +3,7 @@
  * Copyright (C) 2026-present TokiraNeo <TokiraNeo@outlook.com>
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-use bento_protocol::tool::{ToolDefinition, ToolSearchHit};
+use bento_protocol::tool::{ToolDefinition, ToolSearchResult};
 use serde::{Deserialize, Serialize};
 
 pub(crate) type ToolDocId = usize;
@@ -18,7 +18,7 @@ pub enum ToolDocField {
 
 /// 词法通道的排序结果
 #[derive(Debug)]
-pub(crate) struct ScoredHit {
+pub(crate) struct SearchHit {
     pub doc_id: ToolDocId,
     pub score: f32,
 }
@@ -31,22 +31,24 @@ pub(crate) struct SearchFields<'a> {
 
 #[derive(Clone)]
 pub(crate) struct IndexedTool {
+    pub host_name: String,
     pub name: String,
     pub namespace: String,
     pub definition: ToolDefinition,
 }
 
 impl IndexedTool {
-    pub fn new(namespace: &str, definition: ToolDefinition) -> Self {
+    pub fn new(host_name: &str, namespace: &str, definition: ToolDefinition) -> Self {
         Self {
+            host_name: host_name.to_string(),
             name: definition.name.clone(),
             namespace: namespace.to_string(),
             definition,
         }
     }
 
-    pub fn to_hit(&self) -> ToolSearchHit {
-        ToolSearchHit {
+    pub fn to_hit(&self) -> ToolSearchResult {
+        ToolSearchResult {
             qualified_name: format!("{}.{}", self.namespace, self.name),
             description: self.definition.description.clone(),
         }
