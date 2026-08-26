@@ -64,7 +64,7 @@ impl ToolRagEngine {
 
     fn rebuild_snapshot(&self) {
         let docs = self.catalog.ready_tools();
-        let snapshot = Arc::new(SearchSnapshot::build(docs, &self.config));
+        let snapshot = Arc::new(SearchSnapshot::build(docs, &self.config.lexical));
         *self.snapshot.write().unwrap() = snapshot;
     }
 }

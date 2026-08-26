@@ -4,28 +4,31 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use crate::ToolRagConfig;
-use crate::lexical::LexicalIndexer;
 use crate::model::IndexedTool;
+use crate::retrieve::lexical::LexicalIndexer;
+use crate::retrieve::lexical::LexicalRetrieveConfig;
 use std::sync::Arc;
 
 pub(crate) struct SearchSnapshot {
     docs: Vec<Arc<IndexedTool>>,
-    indexer: LexicalIndexer,
+    lexical_indexer: LexicalIndexer,
 }
 
 impl Default for SearchSnapshot {
     fn default() -> Self {
         Self {
             docs: Vec::new(),
-            indexer: LexicalIndexer::default(),
+            lexical_indexer: LexicalIndexer::default(),
         }
     }
 }
 
 impl SearchSnapshot {
-    pub fn build(docs: Vec<Arc<IndexedTool>>, config: &ToolRagConfig) -> Self {
-        let indexer = LexicalIndexer::build(&docs, config);
-        Self { docs, indexer }
+    pub fn build(docs: Vec<Arc<IndexedTool>>, lexical: &LexicalRetrieveConfig) -> Self {
+        let indexer = LexicalIndexer::build(&docs, lexical);
+        Self {
+            docs,
+            lexical_indexer: indexer,
+        }
     }
 }

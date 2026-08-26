@@ -4,8 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+mod config;
 mod indexer;
-mod tokenizer;
 
-pub(crate) use indexer::LexicalIndexer;
-pub(crate) use tokenizer::LexicalTokenizer;
+pub use config::ExactRetrieveConfig;

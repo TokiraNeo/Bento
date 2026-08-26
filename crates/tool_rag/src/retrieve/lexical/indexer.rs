@@ -6,11 +6,9 @@
 
 mod inverted;
 
-use crate::ToolRagConfig;
-use crate::config::ToolRagWeights;
-use crate::lexical::LexicalTokenizer;
-use crate::lexical::indexer::inverted::InvertedTable;
 use crate::model::{IndexedTool, ScoredHit, ToolDocField, ToolDocId};
+use crate::retrieve::lexical::{LexicalRetrieveConfig, LexicalTokenizer};
+use inverted::InvertedTable;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
@@ -21,17 +19,13 @@ pub(crate) struct LexicalIndexer {
     /// dl(d)：文档 d 的加权长度 = Σ (字段词元数 × 字段权重)
     doc_weights: Vec<f32>,
 
-    /// avg_dl：dl 的均值；空库或全 0 时为 1，避免 norm 除零
+    /// avg_dl：dl 的均值；空库或全 0 时为 1
     avg_dl: f32,
 
     /// N：文档总数
     count: usize,
 
-    /// 字段权重、k1(wfs)、b(lp)；构建时拷贝，与 dl 使用同一套
-    weights: ToolRagWeights,
-
-    /// 返回的最大命中数
-    candidate: usize,
+    config: LexicalRetrieveConfig,
 }
 
 impl Default for LexicalIndexer {
@@ -41,44 +35,38 @@ impl Default for LexicalIndexer {
             doc_weights: Vec::default(),
             avg_dl: 1.0,
             count: 0,
-            weights: ToolRagWeights::default(),
-            candidate: 3,
+            config: LexicalRetrieveConfig::default(),
         }
     }
 }
 
 impl LexicalIndexer {
-    pub fn build(docs: &[Arc<IndexedTool>], config: &ToolRagConfig) -> Self {
+    pub fn build(docs: &[Arc<IndexedTool>], config: &LexicalRetrieveConfig) -> Self {
         let count = docs.len();
         let mut doc_weights: Vec<f32> = vec![0.0; count];
         let mut inverted_table = InvertedTable::new();
-        let weights = config.weights.clone();
-        let candidate = config.candidate;
 
         for (index, tool) in docs.iter().enumerate() {
             let fields = tool.search_fields();
 
-            // name
             Self::index_field(
                 &mut doc_weights,
                 &mut inverted_table,
                 index,
                 ToolDocField::Name,
                 fields.name,
-                field_weight(&weights, ToolDocField::Name),
+                config.field_weight(ToolDocField::Name),
             );
 
-            // description
             Self::index_field(
                 &mut doc_weights,
                 &mut inverted_table,
                 index,
                 ToolDocField::Description,
                 fields.description,
-                field_weight(&weights, ToolDocField::Description),
+                config.field_weight(ToolDocField::Description),
             );
 
-            // tags
             for tag in fields.tags {
                 Self::index_field(
                     &mut doc_weights,
@@ -86,13 +74,13 @@ impl LexicalIndexer {
                     index,
                     ToolDocField::Tags,
                     tag,
-                    field_weight(&weights, ToolDocField::Tags),
+                    config.field_weight(ToolDocField::Tags),
                 );
             }
         }
 
         let sum: f32 = doc_weights.iter().sum();
-        let avg_dw = if count == 0 || sum == 0.0 {
+        let avg_dl = if count == 0 || sum == 0.0 {
             1.0
         } else {
             sum / (count as f32)
@@ -101,14 +89,13 @@ impl LexicalIndexer {
         Self {
             inverted_table,
             doc_weights,
-            avg_dl: avg_dw,
+            avg_dl,
             count,
-            weights,
-            candidate,
+            config: config.clone(),
         }
     }
 
-    /// BM25F：score(d,q) = Σ_t IDF(t) × norm(tf'(t,d), dl(d))
+    /// BM25F： score(d,q) = Σ_t IDF(t) × norm(tf'(t,d), dl(d))
     pub fn search(&self, query: &str) -> Vec<ScoredHit> {
         let tokens = LexicalTokenizer::tokenize(query);
         if tokens.is_empty() || self.is_empty() {
@@ -143,7 +130,7 @@ impl LexicalIndexer {
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
-        hits.truncate(self.candidate);
+        hits.truncate(self.config.candidate);
 
         hits
     }
@@ -185,7 +172,7 @@ impl LexicalIndexer {
 
         for p in postings {
             let tf = tfs.entry(p.doc_id).or_insert(0.0);
-            *tf += (p.tf as f32) * field_weight(&self.weights, p.field);
+            *tf += (p.tf as f32) * self.config.field_weight(p.field);
         }
 
         tfs
@@ -208,8 +195,8 @@ impl LexicalIndexer {
 
     /// norm = tf'×(k1+1) / (tf' + k1×(1 - b + b×dl/avgdl))
     fn norm(&self, dl: f32, tf: f32) -> f32 {
-        let k1 = self.weights.k1;
-        let b = self.weights.b;
+        let k1 = self.config.k1;
+        let b = self.config.b;
         let avg_dl = self.avg_dl;
 
         let up = tf * (k1 + 1.0);
@@ -221,11 +208,6 @@ impl LexicalIndexer {
     fn is_empty(&self) -> bool {
         self.count == 0
     }
-}
-
-/// posting 字段权重；缺键时按 1.0，避免下标 panic。
-fn field_weight(weights: &ToolRagWeights, field: ToolDocField) -> f32 {
-    weights.field_weight(field)
 }
 
 #[cfg(test)]
@@ -247,7 +229,7 @@ mod tests {
     }
 
     fn index_with(docs: Vec<Arc<IndexedTool>>, candidate: usize) -> LexicalIndexer {
-        let mut config = ToolRagConfig::default();
+        let mut config = LexicalRetrieveConfig::default();
         config.candidate = candidate;
         LexicalIndexer::build(&docs, &config)
     }
