@@ -5,5 +5,7 @@
  */
 
 mod config;
+mod scaler;
 
 pub use config::FusionConfig;
+pub(crate) use scaler::FusionScaler;

@@ -218,6 +218,7 @@ mod tests {
     fn tool(name: &str, description: &str, tags: &[&str]) -> Arc<IndexedTool> {
         Arc::new(IndexedTool::new(
             "blender",
+            "blender#1",
             ToolDefinition {
                 name: name.into(),
                 description: description.into(),

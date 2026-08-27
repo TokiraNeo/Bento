@@ -21,7 +21,7 @@ impl Default for FusionConfig {
             rrf_k: 60.0,
             exact: 2.0,
             lexical: 1.0,
-            semantic: 1.0,
+            semantic: 1.5,
         }
     }
 }

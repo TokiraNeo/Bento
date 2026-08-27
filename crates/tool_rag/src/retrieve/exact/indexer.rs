@@ -31,7 +31,7 @@ impl ExactIndexer {
 
         for (index, tool) in docs.iter().enumerate() {
             // 这里用裸的host名拼接，这样能让例如"blender.export"、"blender#2.export"都能被"blender.export"检索命中
-            let term = format!("{}.{}", tool.host_name, tool.name);
+            let term = format!("{}.{}", tool.host_name, tool.definition.name);
 
             map.entry(term).or_default().push(*index);
         }

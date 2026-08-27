@@ -32,7 +32,6 @@ pub(crate) struct SearchFields<'a> {
 #[derive(Clone)]
 pub(crate) struct IndexedTool {
     pub host_name: String,
-    pub name: String,
     pub namespace: String,
     pub definition: ToolDefinition,
 }
@@ -41,7 +40,6 @@ impl IndexedTool {
     pub fn new(host_name: &str, namespace: &str, definition: ToolDefinition) -> Self {
         Self {
             host_name: host_name.to_string(),
-            name: definition.name.clone(),
             namespace: namespace.to_string(),
             definition,
         }

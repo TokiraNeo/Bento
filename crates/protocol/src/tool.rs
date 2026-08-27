@@ -85,12 +85,6 @@ pub struct ToolCallContent {
 pub struct ToolSearchQuery {
     pub text: String,
     pub top_k: usize,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub namespace: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub domain: Option<String>,
 }
 
 /// `bento.search_tools` 返回的工具。

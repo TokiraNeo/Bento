@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 use crate::SemanticRetrieveConfig;
-use crate::model::IndexedTool;
+use crate::model::{IndexedTool, SearchHit};
 use std::sync::Arc;
 
 /// 语义通道检索器
@@ -25,5 +25,9 @@ impl SemanticIndexer {
         Self {
             config: config.clone(),
         }
+    }
+
+    pub fn search(&self, query: &str) -> Vec<SearchHit> {
+        todo!()
     }
 }

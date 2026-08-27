@@ -24,7 +24,7 @@ pub struct ToolRagEngine {
 
 impl ToolRagEngine {
     pub fn new(config: &ToolRagConfig) -> Arc<Self> {
-        let (sender, mut receiver) = mpsc::channel();
+        let (sender, receiver) = mpsc::channel();
 
         let engine = Arc::new(Self {
             version: AtomicUsize::new(0),
@@ -70,11 +70,18 @@ impl ToolRagEngine {
         &self,
         query: ToolSearchQuery,
     ) -> Result<Vec<ToolSearchResult>, Cow<'static, str>> {
-        todo!()
+        let snapshot = self.snapshot.read().unwrap();
+
+        let results = snapshot.search_tools(query, &self.config.fusion).await;
+
+        Ok(results)
     }
 
     pub fn get_tool_schema(&self, qualified_name: &str) -> Result<Value, Cow<'static, str>> {
-        todo!()
+        self.snapshot
+            .read()
+            .unwrap()
+            .get_tool_schema(qualified_name)
     }
 
     async fn mark_dirty(&self) -> Result<(), Cow<'static, str>> {
