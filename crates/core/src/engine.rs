@@ -20,7 +20,7 @@ pub(super) struct CoreEngine {
 
 impl CoreEngine {
     pub fn new(config: CoreConfig) -> Self {
-        let tool_engine = Arc::new(ToolRagEngine::new(&config.tool_rag));
+        let tool_engine = ToolRagEngine::new(&config.tool_rag);
 
         let tool_index_sink = Arc::new(RagIndexSink::new(tool_engine.clone()));
         let host_server = Arc::new(HostServer::new(&config.host_server, tool_index_sink));

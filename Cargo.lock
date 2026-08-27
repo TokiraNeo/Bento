@@ -65,11 +65,9 @@ dependencies = [
 name = "bento_tool_rag"
 version = "1.0.0"
 dependencies = [
- "async-trait",
  "bento_protocol",
  "serde",
  "serde_json",
- "thiserror",
 ]
 
 [[package]]

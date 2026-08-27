@@ -33,10 +33,10 @@ impl ToolIndexSink for RagIndexSink {
     }
 
     async fn ready(&self, session_id: &str) -> Result<(), Cow<'static, str>> {
-        self.0.mark_host_ready(session_id)
+        self.0.mark_host_ready(session_id).await
     }
 
     async fn remove(&self, session_id: &str) -> Result<(), Cow<'static, str>> {
-        self.0.remove_host_tools(session_id)
+        self.0.remove_host_tools(session_id).await
     }
 }
