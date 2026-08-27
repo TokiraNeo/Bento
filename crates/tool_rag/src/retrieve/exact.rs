@@ -8,3 +8,4 @@ mod config;
 mod indexer;
 
 pub use config::ExactRetrieveConfig;
+pub(crate) use indexer::ExactIndexer;

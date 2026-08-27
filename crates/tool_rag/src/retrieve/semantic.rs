@@ -5,5 +5,7 @@
  */
 
 mod config;
+mod indexer;
 
 pub use config::SemanticRetrieveConfig;
+pub(crate) use indexer::SemanticIndexer;
