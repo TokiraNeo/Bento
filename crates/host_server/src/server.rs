@@ -13,7 +13,7 @@ use crate::request_task::{RequestOutcome, RequestTask, RequestTaskManager};
 use crate::tool_index::ToolIndexSink;
 use bento_protocol::commands::tool_command;
 use bento_protocol::dispatch::OutboundFrame;
-use bento_protocol::jsonrpc::params::ToolCallParams;
+use bento_protocol::jsonrpc::params::ToolCallParam;
 use bento_protocol::jsonrpc::templates::{TJsonRpcRequest, into_request};
 use bento_protocol::jsonrpc::{JsonRpcRequest, JsonRpcResponse};
 use bento_protocol::versions::JSON_RPC_VERSION;
@@ -182,10 +182,10 @@ impl HostServer {
     pub async fn call_tool(
         &self,
         namespace: String,
-        params: ToolCallParams,
+        params: ToolCallParam,
         timeout: Duration,
     ) -> Result<JsonRpcResponse, Cow<'static, str>> {
-        let request = into_request(TJsonRpcRequest::<ToolCallParams> {
+        let request = into_request(TJsonRpcRequest::<ToolCallParam> {
             jsonrpc: JSON_RPC_VERSION.to_string(),
             id: generate_uuid_simple(),
             method: tool_command::TOOL_CALL.to_string(),

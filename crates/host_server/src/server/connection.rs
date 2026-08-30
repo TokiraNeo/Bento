@@ -11,7 +11,7 @@ use crate::{
     session::{HostSession, HostSessionState},
 };
 use bento_protocol::error::ErrorCode;
-use bento_protocol::jsonrpc::params::{HostHelloParams, HostReadyParams, ToolRegisterParams};
+use bento_protocol::jsonrpc::params::{HostHelloParam, HostReadyParam, ToolRegisterParam};
 use bento_protocol::jsonrpc::results::{HostWelcomeResult, ToolRegisterResult};
 use bento_protocol::jsonrpc::templates::{
     TJsonRpcResponse, from_notification, from_request, into_response,
@@ -297,7 +297,7 @@ async fn handle_host_hello(
     bus: &HostEventBus,
     namespaces: &HostNamespaceRegistry,
 ) {
-    match from_request::<HostHelloParams>(request) {
+    match from_request::<HostHelloParam>(request) {
         Ok(rpc) => {
             // Register new namespace for host
             let namespace =
@@ -344,7 +344,7 @@ async fn handle_tool_register(
     bus: &HostEventBus,
     index_sink: &Arc<dyn ToolIndexSink>,
 ) {
-    match from_request::<ToolRegisterParams>(request) {
+    match from_request::<ToolRegisterParam>(request) {
         Ok(rpc) => {
             let tools = rpc.params.tools;
 
@@ -440,7 +440,7 @@ async fn handle_host_ready(
     bus: &HostEventBus,
     index_sink: &Arc<dyn ToolIndexSink>,
 ) {
-    match from_notification::<HostReadyParams>(notification) {
+    match from_notification::<HostReadyParam>(notification) {
         Ok(_rpc) => {
             session.state = HostSessionState::Ready;
 

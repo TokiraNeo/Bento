@@ -5,7 +5,7 @@
  */
 use async_trait::async_trait;
 use bento_protocol::jsonrpc::JsonRpcResponse;
-use bento_protocol::tool::{ToolSearchQuery, ToolSearchResult};
+use bento_protocol::tool::{ToolSchema, ToolSearchQuery, ToolSearchResult};
 use serde_json::Value;
 use std::borrow::Cow;
 use std::time::Duration;
@@ -19,12 +19,13 @@ pub trait ToolQuerySink: Send + Sync {
     ) -> Result<Vec<ToolSearchResult>, Cow<'static, str>>;
 
     /// `bento.get_tool_schema`：取回完整 input_schema。
-    async fn get_tool_schema(&self, qualified_name: &str) -> Result<Value, Cow<'static, str>>;
+    async fn get_tool_schema(&self, qualified_name: &str) -> Result<ToolSchema, Cow<'static, str>>;
 
     /// bento.call_tool: 调用工具
     async fn call_tool(
         &self,
         qualified_name: &str,
+        args: Value,
         timeout: Duration,
     ) -> Result<JsonRpcResponse, Cow<'static, str>>;
 }

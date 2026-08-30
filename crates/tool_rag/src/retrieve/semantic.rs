@@ -5,7 +5,9 @@
  */
 
 mod config;
+mod embedder;
 mod indexer;
 
 pub use config::SemanticRetrieveConfig;
+pub use embedder::{EmbedVector, Embedder};
 pub(crate) use indexer::SemanticIndexer;

@@ -7,7 +7,8 @@ use async_trait::async_trait;
 use bento_agent_server::ToolQuerySink;
 use bento_host_server::HostServer;
 use bento_protocol::jsonrpc::JsonRpcResponse;
-use bento_protocol::tool::{ToolSearchQuery, ToolSearchResult};
+use bento_protocol::jsonrpc::params::ToolCallParam;
+use bento_protocol::tool::{ToolSchema, ToolSearchQuery, ToolSearchResult};
 use bento_tool_rag::ToolRagEngine;
 use serde_json::Value;
 use std::borrow::Cow;
@@ -37,15 +38,27 @@ impl ToolQuerySink for RagQuerySink {
         self.tool_engine.search_tools(query).await
     }
 
-    async fn get_tool_schema(&self, qualified_name: &str) -> Result<Value, Cow<'static, str>> {
+    async fn get_tool_schema(&self, qualified_name: &str) -> Result<ToolSchema, Cow<'static, str>> {
         self.tool_engine.get_tool_schema(qualified_name)
     }
 
     async fn call_tool(
         &self,
         qualified_name: &str,
+        args: Value,
         timeout: Duration,
     ) -> Result<JsonRpcResponse, Cow<'static, str>> {
-        todo!()
+        let (namespace, tool_name) = qualified_name
+            .split_once('.')
+            .ok_or(Cow::Borrowed("Invalid qualified name"))?;
+
+        let param = ToolCallParam {
+            tool_name: tool_name.to_owned(),
+            arguments: args,
+        };
+
+        self.host_server
+            .call_tool(namespace.to_owned(), param, timeout)
+            .await
     }
 }

@@ -33,7 +33,7 @@ impl Default for LexicalRetrieveConfig {
             ]),
             k1: 1.2,
             b: 0.3,
-            candidate: 32,
+            candidate: 3,
         }
     }
 }

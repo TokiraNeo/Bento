@@ -70,6 +70,12 @@ impl ToolDefinition {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolSchema {
+    pub name: String,
+    pub input_schema: Value,
+}
+
 /// ```json
 /// { "type": "text", "text": "..."}
 /// ```

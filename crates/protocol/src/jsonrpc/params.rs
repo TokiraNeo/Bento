@@ -7,9 +7,6 @@ use crate::tool::ToolDefinition;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EmptyParams {}
-
 /// Host -> Bento
 /// ```json
 /// {
@@ -18,7 +15,7 @@ pub struct EmptyParams {}
 /// }
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HostHelloParams {
+pub struct HostHelloParam {
     pub protocol_version: String,
     pub host_name: String,
 }
@@ -28,7 +25,7 @@ pub struct HostHelloParams {
 /// }
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HostReadyParams {}
+pub struct HostReadyParam {}
 
 /// ```json
 /// {
@@ -38,20 +35,18 @@ pub struct HostReadyParams {}
 /// }
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ToolRegisterParams {
+pub struct ToolRegisterParam {
     pub tools: Vec<ToolDefinition>,
 }
 
 /// ```json
 /// {
-///   "call_id": "...",
 ///   "tool_name": "...",
 ///   "arguments": {...}
 /// }
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ToolCallParams {
-    pub call_id: String,
+pub struct ToolCallParam {
     pub tool_name: String,
     pub arguments: Value,
 }

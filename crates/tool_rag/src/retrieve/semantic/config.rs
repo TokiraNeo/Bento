@@ -18,7 +18,7 @@ impl Default for SemanticRetrieveConfig {
     fn default() -> Self {
         Self {
             enabled: false,
-            candidate: 32,
+            candidate: 5,
         }
     }
 }

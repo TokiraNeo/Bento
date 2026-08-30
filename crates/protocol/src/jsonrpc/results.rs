@@ -7,9 +7,6 @@
 use crate::tool::ToolCallContent;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EmptyResult {}
-
 /// Bento -> Host
 /// ```json
 /// {
@@ -37,7 +34,6 @@ pub struct ToolRegisterResult {
 
 /// ```json
 /// {
-///   "call_id": "...",
 ///   "content": [
 ///     { "type": "text", "text": "..."}
 ///   ],
@@ -46,7 +42,6 @@ pub struct ToolRegisterResult {
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolCallResult {
-    pub call_id: String,
     pub content: Vec<ToolCallContent>,
 
     #[serde(default)]
