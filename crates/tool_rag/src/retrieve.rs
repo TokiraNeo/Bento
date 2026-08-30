@@ -10,4 +10,4 @@ pub(crate) mod semantic;
 
 pub use exact::ExactRetrieveConfig;
 pub use lexical::LexicalRetrieveConfig;
-pub use semantic::SemanticRetrieveConfig;
+pub use semantic::{EmbedVector, Embedder, SemanticRetrieveConfig};

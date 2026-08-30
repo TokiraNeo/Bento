@@ -34,6 +34,7 @@ pub(crate) struct IndexedTool {
     pub host_name: String,
     pub namespace: String,
     pub definition: ToolDefinition,
+    pub semantic_query: String,
 }
 
 impl IndexedTool {
@@ -41,13 +42,17 @@ impl IndexedTool {
         Self {
             host_name: host_name.to_string(),
             namespace: namespace.to_string(),
+            semantic_query: format!(
+                "{}-{}.{}-{}",
+                definition.name, host_name, definition.name, definition.description
+            ),
             definition,
         }
     }
 
     pub fn to_hit(&self) -> ToolSearchResult {
         ToolSearchResult {
-            qualified_name: format!("{}.{}", self.namespace, self.name),
+            qualified_name: format!("{}.{}", self.namespace, self.definition.name),
             description: self.definition.description.clone(),
         }
     }

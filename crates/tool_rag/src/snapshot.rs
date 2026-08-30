@@ -8,9 +8,8 @@ use crate::model::IndexedTool;
 use crate::retrieve::exact::ExactIndexer;
 use crate::retrieve::lexical::LexicalIndexer;
 use crate::retrieve::semantic::SemanticIndexer;
-use crate::{FusionConfig, ToolRagConfig};
-use bento_protocol::tool::{ToolSearchQuery, ToolSearchResult};
-use serde_json::Value;
+use crate::{EmbedVector, FusionConfig, ToolRagConfig};
+use bento_protocol::tool::{ToolSchema, ToolSearchResult};
 use std::borrow::Cow;
 use std::sync::Arc;
 
@@ -53,13 +52,15 @@ impl SearchSnapshot {
 
     pub async fn search_tools(
         &self,
-        query: ToolSearchQuery,
+        query: &str,
+        top_k: usize,
+        embedding: EmbedVector,
         config: &FusionConfig,
     ) -> Vec<ToolSearchResult> {
         std::thread::scope(|s| {
-            let exact = s.spawn(|| self.exact_indexer.search(&query.text));
-            let lexical = s.spawn(|| self.lexical_indexer.search(&query.text));
-            let semantic = s.spawn(|| self.semantic_indexer.search(&query.text));
+            let exact = s.spawn(|| self.exact_indexer.search(query));
+            let lexical = s.spawn(|| self.lexical_indexer.search(query));
+            let semantic = s.spawn(|| self.semantic_indexer.search(embedding));
 
             let mut hits = FusionScaler::rrf(
                 config,
@@ -68,7 +69,7 @@ impl SearchSnapshot {
                 semantic.join().unwrap(),
             );
 
-            hits.truncate(query.top_k);
+            hits.truncate(top_k);
 
             let mut results: Vec<ToolSearchResult> = Vec::new();
 
@@ -87,7 +88,7 @@ impl SearchSnapshot {
         })
     }
 
-    pub fn get_tool_schema(&self, qualified_name: &str) -> Result<Value, Cow<'static, str>> {
+    pub fn get_tool_schema(&self, qualified_name: &str) -> Result<ToolSchema, Cow<'static, str>> {
         let found = self
             .docs
             .iter()
@@ -96,11 +97,22 @@ impl SearchSnapshot {
 
         match found {
             Some(tool) => match serde_json::to_value(&tool.definition.input_schema) {
-                Ok(value) => Ok(value),
+                Ok(value) => Ok(ToolSchema {
+                    name: qualified_name.to_string(),
+                    input_schema: value,
+                }),
                 Err(err) => Err(Cow::Owned(err.to_string())),
             },
 
             None => Err(Cow::Borrowed("Tool not found")),
         }
+    }
+
+    pub fn semantic_docs(&self) -> Vec<String> {
+        self.docs.iter().map(|tool| tool.semantic_query).collect()
+    }
+
+    pub fn update_embeddings(&self, embeddings: Vec<EmbedVector>) {
+        self.semantic_indexer.update(embeddings);
     }
 }
