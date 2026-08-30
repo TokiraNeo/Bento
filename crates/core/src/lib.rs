@@ -6,4 +6,5 @@
 
 mod config;
 mod engine;
+mod semantic;
 mod sinks;
