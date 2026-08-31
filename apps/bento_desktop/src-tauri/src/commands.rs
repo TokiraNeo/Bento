@@ -4,10 +4,4 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-mod config;
-mod engine;
-mod semantic;
-mod sinks;
-
-pub use config::CoreConfig;
-pub use engine::CoreEngine;
+pub(super) mod runtime;

@@ -199,3 +199,9 @@ impl HostServer {
         }
     }
 }
+
+impl Drop for HostServer {
+    fn drop(&mut self) {
+        self.stop();
+    }
+}

@@ -87,7 +87,9 @@ impl ToolRagEngine {
                 Ok(v) => {
                     embedding = v;
                 }
-                Err(err) => {}
+                Err(err) => {
+                    return Err(err);
+                }
             }
         }
 

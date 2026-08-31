@@ -48,3 +48,9 @@ impl CoreEngine {
         self.agent_server.stop();
     }
 }
+
+impl Drop for CoreEngine {
+    fn drop(&mut self) {
+        self.stop();
+    }
+}

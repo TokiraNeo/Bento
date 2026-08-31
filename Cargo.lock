@@ -441,6 +441,7 @@ dependencies = [
 name = "bento_desktop"
 version = "1.0.0"
 dependencies = [
+ "bento_core",
  "serde",
  "serde_json",
  "tauri",
