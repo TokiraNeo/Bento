@@ -10,7 +10,7 @@ use bento_tool_rag::ToolRagEngine;
 use std::borrow::Cow;
 use std::sync::Arc;
 
-pub struct RagIndexSink(Arc<ToolRagEngine>);
+pub(crate) struct RagIndexSink(Arc<ToolRagEngine>);
 
 impl RagIndexSink {
     pub fn new(engine: Arc<ToolRagEngine>) -> Self {

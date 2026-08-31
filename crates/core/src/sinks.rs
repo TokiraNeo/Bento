@@ -7,5 +7,5 @@
 mod rag_index_sink;
 mod rag_query_sink;
 
-pub use rag_index_sink::RagIndexSink;
-pub use rag_query_sink::RagQuerySink;
+pub(crate) use rag_index_sink::RagIndexSink;
+pub(crate) use rag_query_sink::RagQuerySink;

@@ -11,7 +11,7 @@ use bento_tool_rag::ToolRagEngine;
 use std::borrow::Cow;
 use std::sync::Arc;
 
-pub(super) struct CoreEngine {
+pub struct CoreEngine {
     protocol_version: String,
 
     tool_engine: Arc<ToolRagEngine>,

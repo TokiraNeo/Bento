@@ -8,3 +8,6 @@ mod config;
 mod engine;
 mod semantic;
 mod sinks;
+
+pub use config::CoreConfig;
+pub use engine::CoreEngine;

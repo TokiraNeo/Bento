@@ -15,7 +15,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 use std::time::Duration;
 
-pub struct RagQuerySink {
+pub(crate) struct RagQuerySink {
     tool_engine: Arc<ToolRagEngine>,
     host_server: Arc<HostServer>,
 }
