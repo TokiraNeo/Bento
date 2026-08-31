@@ -15,7 +15,7 @@ pub struct AgentServerConfig {
 impl Default for AgentServerConfig {
     fn default() -> Self {
         Self {
-            host: "".into(),
+            host: "127.0.0.1".into(),
             port: 3752,
         }
     }

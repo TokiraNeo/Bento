@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 use async_trait::async_trait;
-use bento_protocol::jsonrpc::JsonRpcResponse;
+use bento_protocol::jsonrpc::results::ToolCallResult;
 use bento_protocol::tool::{ToolSchema, ToolSearchQuery, ToolSearchResult};
 use serde_json::Value;
 use std::borrow::Cow;
@@ -27,5 +27,5 @@ pub trait ToolQuerySink: Send + Sync {
         qualified_name: &str,
         args: Value,
         timeout: Duration,
-    ) -> Result<JsonRpcResponse, Cow<'static, str>>;
+    ) -> Result<ToolCallResult, Cow<'static, str>>;
 }
