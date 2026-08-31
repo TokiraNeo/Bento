@@ -49,7 +49,7 @@ impl AgentServer {
 
         let listener = TcpListener::bind((self.config.host.as_str(), self.config.port))
             .await
-            .map_err(|err| Err(Cow::Owned(err.to_string())))?;
+            .map_err(|err| Cow::Owned(err.to_string()))?;
 
         axum::serve(listener, router)
             .with_graceful_shutdown(async move { ct.cancelled().await })
