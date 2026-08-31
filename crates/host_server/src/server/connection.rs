@@ -28,7 +28,7 @@ use std::borrow::Cow;
 use std::sync::Arc;
 use tokio::{
     net::{TcpListener, TcpStream},
-    sync::{mpsc, watch},
+    sync::mpsc,
 };
 use tokio_tungstenite::{
     WebSocketStream, accept_hdr_async,
@@ -38,6 +38,7 @@ use tokio_tungstenite::{
         handshake::server::{ErrorResponse, Request, Response},
     },
 };
+use tokio_util::sync::CancellationToken;
 use tracing::{error, warn};
 
 #[tracing::instrument(skip(
@@ -48,7 +49,7 @@ use tracing::{error, warn};
     namespaces,
     request_manager,
     index_sink,
-    shutdown_signal
+    shutdown
 ))]
 pub(super) async fn listen_connection(
     listener: TcpListener,
@@ -58,11 +59,11 @@ pub(super) async fn listen_connection(
     namespaces: HostNamespaceRegistry,
     request_manager: RequestTaskManager,
     index_sink: Arc<dyn ToolIndexSink>,
-    mut shutdown_signal: watch::Receiver<bool>,
+    shutdown: CancellationToken,
 ) {
     loop {
         tokio::select! {
-            _ = shutdown_signal.changed() => {
+            _ = shutdown.cancelled() => {
                 break;
             }
 
@@ -75,10 +76,11 @@ pub(super) async fn listen_connection(
                         let clone_namespaces = namespaces.clone();
                         let clone_request_manager = request_manager.clone();
                         let clone_index_sink = index_sink.clone();
+                        let clone_shutdown = shutdown.child_token();
 
                         tokio::spawn(async move {
                             handle_connection(tcp, clone_token, clone_bus, clone_handlers, clone_namespaces, clone_request_manager,
-                            clone_index_sink).await;
+                            clone_index_sink, clone_shutdown).await;
                         });
                     }
 
@@ -91,7 +93,16 @@ pub(super) async fn listen_connection(
     }
 }
 
-#[tracing::instrument(skip(tcp, token, bus, handlers, namespaces, request_manager, index_sink))]
+#[tracing::instrument(skip(
+    tcp,
+    token,
+    bus,
+    handlers,
+    namespaces,
+    request_manager,
+    index_sink,
+    shutdown
+))]
 async fn handle_connection(
     tcp: TcpStream,
     token: String,
@@ -100,6 +111,7 @@ async fn handle_connection(
     namespaces: HostNamespaceRegistry,
     request_manager: RequestTaskManager,
     index_sink: Arc<dyn ToolIndexSink>,
+    shutdown: CancellationToken,
 ) {
     let ws: WebSocketStream<TcpStream> = match accept_hdr_async(
         tcp,
@@ -112,7 +124,7 @@ async fn handle_connection(
                 .map(str::trim)
                 .unwrap_or_default();
 
-            if !token.is_empty() && got_token == token {
+            if token.is_empty() || got_token == token {
                 Ok(response)
             } else {
                 Err(Response::builder()
@@ -158,19 +170,28 @@ async fn handle_connection(
         }
     });
 
-    while let Some(Ok(msg)) = reader.next().await {
-        if !handle_message(
-            &mut session,
-            msg,
-            &bus,
-            &namespaces,
-            &request_manager,
-            &index_sink,
-        )
-        .await
-        {
-            warn!("Failed to handle message");
-            break;
+    loop {
+        tokio::select! {
+            _ = shutdown.cancelled() => break,
+
+            msg = reader.next() => match msg {
+                Some(Ok(msg)) => {
+                    if !handle_message(
+                        &mut session,
+                        msg,
+                        &bus,
+                        &namespaces,
+                        &request_manager,
+                        &index_sink,
+                    )
+                    .await
+                    {
+                        warn!("Failed to handle message");
+                        break;
+                    }
+                }
+                _ => break,
+            },
         }
     }
 
@@ -297,6 +318,8 @@ async fn handle_host_hello(
     bus: &HostEventBus,
     namespaces: &HostNamespaceRegistry,
 ) {
+    let id = request.id.clone();
+
     match from_request::<HostHelloParam>(request) {
         Ok(rpc) => {
             // Register new namespace for host
@@ -315,7 +338,7 @@ async fn handle_host_hello(
             // response
             let response = TJsonRpcResponse::<HostWelcomeResult> {
                 jsonrpc: rpc.jsonrpc,
-                id: rpc.id,
+                id: rpc.id.clone(),
                 result: Some(HostWelcomeResult {
                     namespace,
                     protocol_version: MCP_PROTOCOL_VERSION.into(),
@@ -328,11 +351,15 @@ async fn handle_host_hello(
                 Ok(resp) => session.handler.send(OutboundFrame::Response(resp)).await,
                 Err(err) => {
                     error!("Failed to cast response: {:?}", err);
+                    let resp = JsonRpcResponse::new_error(rpc.id, err);
+                    session.handler.send(OutboundFrame::Response(resp)).await;
                 }
             }
         }
         Err(err) => {
             error!("Failed to cast request: {:?}", err);
+            let resp = JsonRpcResponse::new_error(id, err);
+            session.handler.send(OutboundFrame::Response(resp)).await;
         }
     }
 }
@@ -344,6 +371,8 @@ async fn handle_tool_register(
     bus: &HostEventBus,
     index_sink: &Arc<dyn ToolIndexSink>,
 ) {
+    let id = request.id.clone();
+
     match from_request::<ToolRegisterParam>(request) {
         Ok(rpc) => {
             let tools = rpc.params.tools;
@@ -429,6 +458,9 @@ async fn handle_tool_register(
 
         Err(err) => {
             error!("Failed to cast request: {:?}", err);
+
+            let resp = JsonRpcResponse::new_error(id, err);
+            session.handler.send(OutboundFrame::Response(resp)).await;
         }
     }
 }

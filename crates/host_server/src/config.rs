@@ -18,7 +18,7 @@ impl Default for HostServerConfig {
         Self {
             host: "127.0.0.1".into(),
             port: 2483,
-            token: "".into(),
+            token: String::new(),
         }
     }
 }

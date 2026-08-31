@@ -45,7 +45,7 @@ impl SearchSnapshot {
                 let docs = docs.clone();
                 s.spawn(move || LexicalIndexer::build(&docs, &config.lexical))
             };
-            
+
             let semantic = {
                 let docs = docs.clone();
                 s.spawn(move || SemanticIndexer::build(&docs, &config.semantic))

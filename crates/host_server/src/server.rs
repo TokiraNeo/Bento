@@ -14,6 +14,7 @@ use crate::tool_index::ToolIndexSink;
 use bento_protocol::commands::tool_command;
 use bento_protocol::dispatch::OutboundFrame;
 use bento_protocol::jsonrpc::params::ToolCallParam;
+use bento_protocol::jsonrpc::results::ToolCallResult;
 use bento_protocol::jsonrpc::templates::{TJsonRpcRequest, into_request};
 use bento_protocol::jsonrpc::{JsonRpcRequest, JsonRpcResponse};
 use bento_protocol::versions::JSON_RPC_VERSION;
@@ -22,7 +23,8 @@ use std::borrow::Cow;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::TcpListener;
-use tokio::sync::{broadcast, oneshot, watch};
+use tokio::sync::{broadcast, oneshot};
+use tokio_util::sync::CancellationToken;
 
 /// ```
 /// 宿主                                Hub
@@ -59,14 +61,11 @@ pub struct HostServer {
     tool_index_sink: Arc<dyn ToolIndexSink>,
 
     /// Shut down signal for worker
-    shutdown_sender: watch::Sender<bool>,
-    shutdown_receiver: watch::Receiver<bool>,
+    shutdown: CancellationToken,
 }
 
 impl HostServer {
     pub fn new(config: &HostServerConfig, index_sink: Arc<dyn ToolIndexSink>) -> Self {
-        let (sender, receiver) = watch::channel(false);
-
         Self {
             config: config.clone(),
             handlers: HostHandlerRegistry::new(),
@@ -74,8 +73,7 @@ impl HostServer {
             bus: HostEventBus::new(),
             request_manager: RequestTaskManager::new(),
             tool_index_sink: index_sink,
-            shutdown_sender: sender,
-            shutdown_receiver: receiver,
+            shutdown: CancellationToken::new(),
         }
     }
 
@@ -83,10 +81,10 @@ impl HostServer {
         self.bus.subscribe()
     }
 
-    pub async fn run(&self) -> Result<(), String> {
+    pub async fn run(&self) -> Result<(), Cow<'static, str>> {
         let listener = TcpListener::bind((self.config.host.as_str(), self.config.port))
             .await
-            .map_err(|err| err.to_string())?;
+            .map_err(|err| Cow::Owned(err.to_string()))?;
 
         let clone_token = self.config.token.clone();
         let clone_bus = self.bus.clone();
@@ -94,31 +92,25 @@ impl HostServer {
         let clone_namespace = self.namespaces.clone();
         let clone_request_manager = self.request_manager.clone();
         let clone_index_sink = self.tool_index_sink.clone();
-        let shutdown_signal = self.shutdown_receiver.clone();
+        let shutdown = self.shutdown.child_token();
 
-        tokio::spawn(async move {
-            connection::listen_connection(
-                listener,
-                clone_token,
-                clone_bus,
-                clone_handlers,
-                clone_namespace,
-                clone_request_manager,
-                clone_index_sink,
-                shutdown_signal,
-            )
-            .await;
-        });
+        connection::listen_connection(
+            listener,
+            clone_token,
+            clone_bus,
+            clone_handlers,
+            clone_namespace,
+            clone_request_manager,
+            clone_index_sink,
+            shutdown,
+        )
+        .await;
 
         Ok(())
     }
 
-    pub fn stop(&self) -> Result<(), String> {
-        self.shutdown_sender
-            .send(true)
-            .map_err(|err| err.to_string())?;
-
-        Ok(())
+    pub fn stop(&self) {
+        self.shutdown.cancel();
     }
 
     async fn send_to_host(
@@ -184,17 +176,26 @@ impl HostServer {
         namespace: String,
         params: ToolCallParam,
         timeout: Duration,
-    ) -> Result<JsonRpcResponse, Cow<'static, str>> {
+    ) -> Result<ToolCallResult, Cow<'static, str>> {
         let request = into_request(TJsonRpcRequest::<ToolCallParam> {
             jsonrpc: JSON_RPC_VERSION.to_string(),
             id: generate_uuid_simple(),
             method: tool_command::TOOL_CALL.to_string(),
             params,
-        });
+        })
+        .map_err(|err| err.message)?;
 
-        match request {
-            Ok(req) => self.request_to_host(namespace, req, timeout).await,
-            Err(err) => Err(err.message),
+        let response = self.request_to_host(namespace, request, timeout).await?;
+
+        if let Some(err) = response.error {
+            return Err(err.message);
+        }
+
+        match response.result {
+            Some(result) => serde_json::from_value::<ToolCallResult>(result)
+                .map_err(|err| Cow::Owned(err.to_string())),
+
+            None => Err(Cow::Borrowed("tool.result missing result")),
         }
     }
 }
