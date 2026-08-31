@@ -34,13 +34,13 @@ impl FusionScaler {
 
         let mut results: Vec<SearchHit> = rrf_scores
             .into_iter()
-            .flat_map(|(doc_id, score)| SearchHit { doc_id, score })
+            .map(|(doc_id, score)| SearchHit { doc_id, score })
             .collect();
 
         results.sort_by(|a, b| {
             b.score
                 .partial_cmp(&a.score)
-                .unwrap_or(std::cmp::Ordering::Equal);
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         results

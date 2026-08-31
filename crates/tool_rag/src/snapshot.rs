@@ -36,9 +36,20 @@ impl Default for SearchSnapshot {
 impl SearchSnapshot {
     pub fn build(version: usize, docs: Vec<Arc<IndexedTool>>, config: &ToolRagConfig) -> Self {
         std::thread::scope(|s| {
-            let exact = s.spawn(|| ExactIndexer::build(&docs, &config.exact));
-            let lexical = s.spawn(|| LexicalIndexer::build(&docs, &config.lexical));
-            let semantic = s.spawn(|| SemanticIndexer::build(&docs, &config.semantic));
+            let exact = {
+                let docs = docs.clone();
+                s.spawn(move || ExactIndexer::build(&docs, &config.exact))
+            };
+
+            let lexical = {
+                let docs = docs.clone();
+                s.spawn(move || LexicalIndexer::build(&docs, &config.lexical))
+            };
+            
+            let semantic = {
+                let docs = docs.clone();
+                s.spawn(move || SemanticIndexer::build(&docs, &config.semantic))
+            };
 
             Self {
                 version,
@@ -109,7 +120,10 @@ impl SearchSnapshot {
     }
 
     pub fn semantic_docs(&self) -> Vec<String> {
-        self.docs.iter().map(|tool| tool.semantic_query).collect()
+        self.docs
+            .iter()
+            .map(|tool| tool.semantic_query.clone())
+            .collect()
     }
 
     pub fn update_embeddings(&self, embeddings: Vec<EmbedVector>) {

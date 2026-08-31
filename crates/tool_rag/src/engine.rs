@@ -60,25 +60,25 @@ impl ToolRagEngine {
             session_id.to_owned(),
             ToolBucket::new(name, namespace, tools),
         )?;
-        self.mark_dirty().await?;
+        self.mark_dirty()?;
         Ok(count)
     }
 
     pub async fn mark_host_ready(&self, session_id: &str) -> Result<(), Cow<'static, str>> {
         self.catalog.mark_ready(session_id)?;
-        self.mark_dirty().await
+        self.mark_dirty()
     }
 
     pub async fn remove_host_tools(&self, session_id: &str) -> Result<(), Cow<'static, str>> {
         self.catalog.remove(session_id)?;
-        self.mark_dirty().await
+        self.mark_dirty()
     }
 
     pub async fn search_tools(
         &self,
         query: ToolSearchQuery,
     ) -> Result<Vec<ToolSearchResult>, Cow<'static, str>> {
-        let snapshot = self.snapshot.read().unwrap();
+        let snapshot = self.snapshot.read().unwrap().clone();
 
         let mut embedding: EmbedVector = Vec::new();
 
@@ -105,10 +105,10 @@ impl ToolRagEngine {
             .get_tool_schema(qualified_name)
     }
 
-    async fn mark_dirty(&self) -> Result<(), Cow<'static, str>> {
+    fn mark_dirty(&self) -> Result<(), Cow<'static, str>> {
         self.version.fetch_add(1, Acquire);
 
-        match self.snapshot_sender.send(()).await {
+        match self.snapshot_sender.send(()) {
             Ok(_) => Ok(()),
             Err(err) => Err(Cow::Owned(err.to_string())),
         }
