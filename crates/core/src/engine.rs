@@ -8,6 +8,7 @@ use crate::sinks::{RagIndexSink, RagQuerySink};
 use bento_agent_server::AgentServer;
 use bento_host_server::HostServer;
 use bento_tool_rag::ToolRagEngine;
+use std::borrow::Cow;
 use std::sync::Arc;
 
 pub(super) struct CoreEngine {
@@ -34,5 +35,16 @@ impl CoreEngine {
             host_server,
             agent_server,
         }
+    }
+
+    pub async fn run(&self) -> Result<(), Cow<'static, str>> {
+        tokio::try_join!(self.host_server.run(), self.agent_server.run())?;
+
+        Ok(())
+    }
+
+    pub fn stop(&self) {
+        self.host_server.stop();
+        self.agent_server.stop();
     }
 }

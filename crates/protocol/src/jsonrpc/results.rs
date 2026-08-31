@@ -40,7 +40,7 @@ pub struct ToolRegisterResult {
 ///   "is_error": false
 /// }
 /// ```
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ToolCallResult {
     pub content: Vec<ToolCallContent>,
 

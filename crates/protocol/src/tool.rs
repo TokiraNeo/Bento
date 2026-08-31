@@ -76,13 +76,19 @@ pub struct ToolSchema {
     pub input_schema: Value,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ToolCallContentType {
+    Text,
+}
+
 /// ```json
 /// { "type": "text", "text": "..."}
 /// ```
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ToolCallContent {
     #[serde(rename = "type")]
-    pub content_type: String,
+    pub content_type: ToolCallContentType,
     pub text: String,
 }
 
@@ -94,8 +100,15 @@ pub struct ToolSearchQuery {
 }
 
 /// `bento.search_tools` 返回的工具。
+/// ```json
+/// {
+///   "name": "",
+///   "description": ""
+/// }
+/// ```
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ToolSearchResult {
+    #[serde(rename = "name")]
     pub qualified_name: String,
     pub description: String,
 }
