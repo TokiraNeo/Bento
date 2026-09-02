@@ -3,13 +3,15 @@
  * Copyright (C) 2026-present TokiraNeo <TokiraNeo@outlook.com>
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
+use crate::{ToolApprovalHandler, ToolApprovalRequest};
 use async_trait::async_trait;
 use bento_agent_server::ToolQuerySink;
 use bento_host_server::HostServer;
 use bento_protocol::jsonrpc::params::ToolCallParam;
 use bento_protocol::jsonrpc::results::ToolCallResult;
-use bento_protocol::tool::{ToolSchema, ToolSearchQuery, ToolSearchResult};
+use bento_protocol::tool::{ToolRisk, ToolSchema, ToolSearchQuery, ToolSearchResult};
 use bento_tool_rag::ToolRagEngine;
+use bento_utility::generate_uuid_simple;
 use serde_json::Value;
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -18,13 +20,19 @@ use std::time::Duration;
 pub(crate) struct RagQuerySink {
     tool_engine: Arc<ToolRagEngine>,
     host_server: Arc<HostServer>,
+    approval_handler: Arc<dyn ToolApprovalHandler>,
 }
 
 impl RagQuerySink {
-    pub fn new(tool_engine: Arc<ToolRagEngine>, host_server: Arc<HostServer>) -> Self {
+    pub fn new(
+        tool_engine: Arc<ToolRagEngine>,
+        host_server: Arc<HostServer>,
+        approval_handler: Arc<dyn ToolApprovalHandler>,
+    ) -> Self {
         Self {
             tool_engine,
             host_server,
+            approval_handler,
         }
     }
 }
@@ -51,6 +59,25 @@ impl ToolQuerySink for RagQuerySink {
         let (namespace, tool_name) = qualified_name
             .split_once('.')
             .ok_or(Cow::Borrowed("Invalid qualified name"))?;
+
+        let risk = self.tool_engine.get_tool_risk(qualified_name)?;
+
+        // 审批通道，等待approve/deny
+        if risk == ToolRisk::High {
+            let request = ToolApprovalRequest {
+                id: generate_uuid_simple(),
+                qualified_name: qualified_name.to_string(),
+                namespace: namespace.to_string(),
+                tool_name: tool_name.to_string(),
+                arguments: args.clone(),
+            };
+
+            let approval = self.approval_handler.request(request).await;
+
+            if !approval {
+                return Err(Cow::Borrowed("Tool call rejected by approval"));
+            }
+        }
 
         let param = ToolCallParam {
             tool_name: tool_name.to_owned(),

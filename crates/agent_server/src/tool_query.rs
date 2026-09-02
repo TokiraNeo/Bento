@@ -5,7 +5,7 @@
  */
 use async_trait::async_trait;
 use bento_protocol::jsonrpc::results::ToolCallResult;
-use bento_protocol::tool::{ToolSchema, ToolSearchQuery, ToolSearchResult};
+use bento_protocol::tool::{ToolRisk, ToolSchema, ToolSearchQuery, ToolSearchResult};
 use serde_json::Value;
 use std::borrow::Cow;
 use std::time::Duration;

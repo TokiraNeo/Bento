@@ -6,7 +6,7 @@
 mod tool_params;
 
 use crate::ToolQuerySink;
-use bento_protocol::tool::ToolSearchQuery;
+use bento_protocol::tool::{ToolRisk, ToolSearchQuery};
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::{CallToolResult, ContentBlock, ProtocolVersion, ServerCapabilities, ServerInfo};
 use rmcp::{ErrorData as McpError, ServerHandler, tool, tool_handler, tool_router};

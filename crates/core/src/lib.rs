@@ -9,5 +9,8 @@ mod engine;
 mod semantic;
 mod sinks;
 
+mod approval;
+
+pub use approval::{ToolApprovalHandler, ToolApprovalRequest};
 pub use config::CoreConfig;
 pub use engine::CoreEngine;
