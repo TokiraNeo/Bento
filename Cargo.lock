@@ -442,6 +442,7 @@ dependencies = [
 name = "bento_desktop"
 version = "1.0.0"
 dependencies = [
+ "async-trait",
  "bento_core",
  "serde",
  "serde_json",

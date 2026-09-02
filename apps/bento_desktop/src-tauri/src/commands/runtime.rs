@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use crate::approval::BentoApprovalHandler;
 use crate::state::BentoAppState;
 use bento_core::{CoreConfig, CoreEngine};
 use std::sync::Arc;
@@ -42,8 +43,9 @@ fn save_config(state: State<BentoAppState>, config: CoreConfig) {
 #[tauri::command]
 fn start_engine(state: State<BentoAppState>) {
     let config = state.config.read().unwrap().clone();
+    let approval_handler = Arc::new(BentoApprovalHandler::new());
 
-    let engine = Arc::new(CoreEngine::new(config));
+    let engine = Arc::new(CoreEngine::new(config, approval_handler));
     let runner = engine.clone();
 
     *state.engine.write().unwrap() = Some(engine);
