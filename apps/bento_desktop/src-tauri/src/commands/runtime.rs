@@ -3,6 +3,7 @@
  * Copyright (C) 2026-present TokiraNeo <TokiraNeo@outlook.com>
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
+
 use crate::state::BentoAppState;
 use bento_core::{CoreConfig, CoreEngine};
 use std::sync::Arc;

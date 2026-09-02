@@ -6,6 +6,7 @@
 
 mod commands;
 mod state;
+
 use bento_core::CoreConfig;
 use state::BentoAppState;
 use std::sync::{Arc, RwLock};

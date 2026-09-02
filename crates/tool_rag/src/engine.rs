@@ -7,7 +7,9 @@ use crate::catalog::{ToolBucket, ToolCatalog};
 use crate::config::ToolRagConfig;
 use crate::snapshot::SearchSnapshot;
 use crate::{EmbedVector, Embedder};
-use bento_protocol::tool::{ToolDefinition, ToolSchema, ToolSearchQuery, ToolSearchResult};
+use bento_protocol::tool::{
+    ToolDefinition, ToolRisk, ToolSchema, ToolSearchQuery, ToolSearchResult,
+};
 use std::borrow::Cow;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering::Acquire;
@@ -107,6 +109,10 @@ impl ToolRagEngine {
             .get_tool_schema(qualified_name)
     }
 
+    pub fn get_tool_risk(&self, qualified_name: &str) -> Result<ToolRisk, Cow<'static, str>> {
+        self.snapshot.read().unwrap().get_tool_risk(qualified_name)
+    }
+
     fn mark_dirty(&self) -> Result<(), Cow<'static, str>> {
         self.version.fetch_add(1, Acquire);
 
@@ -128,6 +134,10 @@ impl ToolRagEngine {
             let version = engine.version.load(Acquire);
             let docs = engine.catalog.ready_tools();
             let snapshot = Arc::new(SearchSnapshot::build(version, docs, &engine.config));
+
+            if snapshot.version != engine.version.load(Acquire) {
+                continue;
+            }
 
             *engine.snapshot.write().unwrap() = snapshot.clone();
 
@@ -157,6 +167,10 @@ impl ToolRagEngine {
                 let docs = latest.semantic_docs();
 
                 if let Ok(embeddings) = embedder.embed_docs(&docs) {
+                    if latest.version != engine.version.load(Acquire) {
+                        continue;
+                    }
+
                     latest.update_embeddings(embeddings);
                 }
             }

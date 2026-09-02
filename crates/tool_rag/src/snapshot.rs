@@ -4,18 +4,20 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 use crate::fusion::FusionScaler;
-use crate::model::IndexedTool;
+use crate::model::{IndexedTool, ToolDocId};
 use crate::retrieve::exact::ExactIndexer;
 use crate::retrieve::lexical::LexicalIndexer;
 use crate::retrieve::semantic::SemanticIndexer;
 use crate::{EmbedVector, FusionConfig, ToolRagConfig};
-use bento_protocol::tool::{ToolSchema, ToolSearchResult};
+use bento_protocol::tool::{ToolRisk, ToolSchema, ToolSearchResult};
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 pub(crate) struct SearchSnapshot {
     pub version: usize,
     docs: Vec<Arc<IndexedTool>>,
+    entities: HashMap<String, ToolDocId>, // qualified_name -> ToolDocId
     exact_indexer: ExactIndexer,
     lexical_indexer: LexicalIndexer,
     semantic_indexer: SemanticIndexer,
@@ -26,6 +28,7 @@ impl Default for SearchSnapshot {
         Self {
             version: 0,
             docs: Vec::new(),
+            entities: HashMap::new(),
             exact_indexer: ExactIndexer::default(),
             lexical_indexer: LexicalIndexer::default(),
             semantic_indexer: SemanticIndexer::default(),
@@ -51,14 +54,32 @@ impl SearchSnapshot {
                 s.spawn(move || SemanticIndexer::build(&docs, &config.semantic))
             };
 
+            let mut entities: HashMap<String, ToolDocId> = HashMap::new();
+
+            for (id, tool) in docs.iter().enumerate() {
+                let name = format!("{}.{}", tool.namespace, tool.definition.name);
+                *entities.entry(name).or_default() = id;
+            }
+
             Self {
                 version,
                 docs,
+                entities,
                 exact_indexer: exact.join().unwrap(),
                 lexical_indexer: lexical.join().unwrap(),
                 semantic_indexer: semantic.join().unwrap(),
             }
         })
+    }
+
+    fn find_tool(&self, qualified_name: &str) -> Option<&Arc<IndexedTool>> {
+        if qualified_name.is_empty() {
+            return None;
+        }
+
+        self.entities
+            .get(qualified_name)
+            .and_then(|id| self.docs.get(*id))
     }
 
     pub async fn search_tools(
@@ -100,11 +121,7 @@ impl SearchSnapshot {
     }
 
     pub fn get_tool_schema(&self, qualified_name: &str) -> Result<ToolSchema, Cow<'static, str>> {
-        let found = self
-            .docs
-            .iter()
-            .find(|tool| format!("{}.{}", tool.namespace, tool.definition.name) == qualified_name)
-            .cloned();
+        let found = self.find_tool(qualified_name).cloned();
 
         match found {
             Some(tool) => match serde_json::to_value(&tool.definition.input_schema) {
@@ -114,6 +131,16 @@ impl SearchSnapshot {
                 }),
                 Err(err) => Err(Cow::Owned(err.to_string())),
             },
+
+            None => Err(Cow::Borrowed("Tool not found")),
+        }
+    }
+
+    pub fn get_tool_risk(&self, qualified_name: &str) -> Result<ToolRisk, Cow<'static, str>> {
+        let found = self.find_tool(qualified_name).cloned();
+
+        match found {
+            Some(tool) => Ok(tool.definition.risk),
 
             None => Err(Cow::Borrowed("Tool not found")),
         }

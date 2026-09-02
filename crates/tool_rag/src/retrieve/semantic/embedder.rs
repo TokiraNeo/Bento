@@ -8,6 +8,9 @@ use std::borrow::Cow;
 pub type EmbedVector = Vec<f32>;
 
 pub trait Embedder: Send + Sync {
+    /// return normalized embed vectors
     fn embed_docs(&self, docs: &[String]) -> Result<Vec<EmbedVector>, Cow<'static, str>>;
+
+    /// return a normalized embed vector
     fn embed_query(&self, query: &str) -> Result<EmbedVector, Cow<'static, str>>;
 }

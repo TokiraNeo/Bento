@@ -15,6 +15,7 @@ bento_host_server = { path = "../host_server" }
 bento_agent_server = { path = "../agent_server" }
 bento_protocol = { path = "../protocol" }
 bento_tool_rag = { path = "../tool_rag" }
+bento_utility = { path = "../utility" }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 fastembed = "6.0.2"

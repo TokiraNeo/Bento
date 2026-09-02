@@ -431,6 +431,7 @@ dependencies = [
  "bento_host_server",
  "bento_protocol",
  "bento_tool_rag",
+ "bento_utility",
  "fastembed",
  "serde",
  "serde_json",
@@ -479,6 +480,7 @@ name = "bento_tool_rag"
 version = "1.0.0"
 dependencies = [
  "bento_protocol",
+ "bento_utility",
  "serde",
  "serde_json",
 ]

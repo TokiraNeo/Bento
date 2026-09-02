@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 use bento_tool_rag::{EmbedVector, Embedder};
+use bento_utility::maths::normalize;
 use fastembed::{EmbeddingModel, TextEmbedding, TextInitOptions};
 use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
@@ -37,7 +38,12 @@ impl Embedder for SemanticEmbedder {
             .embed(docs, None)
             .map_err(|e| Cow::Owned(e.to_string()))?;
 
-        Ok(embeddings)
+        let normalized = embeddings
+            .into_iter()
+            .map(|vector| normalize(vector))
+            .collect();
+
+        Ok(normalized)
     }
 
     fn embed_query(&self, query: &str) -> Result<EmbedVector, Cow<'static, str>> {
@@ -51,6 +57,10 @@ impl Embedder for SemanticEmbedder {
             .embed(&[query], None)
             .map_err(|e| Cow::Owned(e.to_string()))?;
 
-        embedding.pop().ok_or(Cow::Borrowed("empty embedding"))
+        match embedding.pop() {
+            None => Err(Cow::Borrowed("empty embedding")),
+
+            Some(vector) => Ok(normalize(vector)),
+        }
     }
 }

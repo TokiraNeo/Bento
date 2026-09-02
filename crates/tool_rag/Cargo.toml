@@ -11,5 +11,6 @@ repository.workspace = true
 
 [dependencies]
 bento_protocol = { path = "../protocol" }
+bento_utility = { path = "../utility" }
 serde = "1.0.229"
 serde_json = "1.0.151"

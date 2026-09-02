@@ -5,6 +5,8 @@
  */
 use crate::model::{IndexedTool, SearchHit};
 use crate::{EmbedVector, SemanticRetrieveConfig};
+use bento_utility::maths::dot;
+use std::cmp::Ordering::Equal;
 use std::sync::{Arc, RwLock};
 
 /// 语义通道检索器
@@ -37,13 +39,30 @@ impl SemanticIndexer {
             return Vec::new();
         }
 
-        todo!()
+        let store = self.embeddings.read().unwrap();
+
+        let mut hits: Vec<SearchHit> = store
+            .iter()
+            .enumerate()
+            .filter_map(|(id, vector)| {
+                vector.as_ref().map(|v| SearchHit {
+                    doc_id: id,
+                    score: dot(&embedding, v),
+                })
+            })
+            .collect();
+
+        hits.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(Equal));
+
+        hits.truncate(self.config.candidate);
+
+        hits
     }
 
     pub fn update(&self, embeddings: Vec<EmbedVector>) {
         let mut store = self.embeddings.write().unwrap();
 
-        if (embeddings.is_empty() || embeddings.len() != store.len()) {
+        if embeddings.is_empty() || embeddings.len() != store.len() {
             return;
         }
 
