@@ -159,7 +159,10 @@ impl HostServer {
                         Err(Cow::Borrowed("Request Task Canceled."))
                     }
 
-                    Ok(Err(_)) => Err(Cow::Borrowed("Request Task Failed.")),
+                    Ok(Err(_)) => {
+                        self.request_manager.cancel(&id);
+                        Err(Cow::Borrowed("Request Task Failed."))
+                    }
 
                     Err(_) => {
                         self.request_manager.cancel(&id);

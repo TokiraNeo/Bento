@@ -10,9 +10,8 @@ use serde_json::Value;
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ToolRisk {
-    Low,
     #[default]
-    Medium,
+    Normal,
     High,
 }
 

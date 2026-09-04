@@ -43,11 +43,12 @@ impl RequestTaskManager {
         let task = self.pending_task.lock().unwrap().remove(id);
 
         match task {
-            Some(t) => {
-                let _ = t.responder.send(RequestOutcome::Response(response));
-                true
-            }
             None => false,
+
+            Some(task) => match task.responder.send(RequestOutcome::Response(response)) {
+                Ok(_) => true,
+                Err(_) => false,
+            },
         }
     }
 

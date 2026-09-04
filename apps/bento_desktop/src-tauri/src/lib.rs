@@ -6,8 +6,10 @@
 
 mod approval;
 mod commands;
+mod events;
 mod state;
 
+use crate::approval::BentoApprovalHandler;
 use bento_core::CoreConfig;
 use state::BentoAppState;
 use std::sync::{Arc, RwLock};
@@ -18,6 +20,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(commands::runtime::plugin())
+        .plugin(commands::approval::plugin())
         .setup(|app| {
             let config_path = app.path().app_config_dir()?.join("config.json");
 
@@ -27,6 +30,7 @@ pub fn run() {
                 config_path,
                 config: RwLock::new(config),
                 engine: RwLock::new(None),
+                approval_handler: Arc::new(BentoApprovalHandler::new(app.handle().clone())),
             });
 
             Ok(())

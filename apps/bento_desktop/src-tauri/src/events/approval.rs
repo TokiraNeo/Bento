@@ -4,5 +4,4 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-pub(super) mod approval;
-pub(super) mod runtime;
+pub(crate) const TOOL_APPROVAL_REQUEST: &'static str = "tool-approval-request";
