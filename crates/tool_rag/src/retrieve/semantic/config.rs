@@ -14,8 +14,6 @@ pub struct SemanticRetrieveConfig {
 
 impl Default for SemanticRetrieveConfig {
     fn default() -> Self {
-        Self {
-            candidate: 5,
-        }
+        Self { candidate: 5 }
     }
 }

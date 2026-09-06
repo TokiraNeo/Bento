@@ -14,4 +14,5 @@ mod tool_index;
 
 pub use config::HostServerConfig;
 pub use server::HostServer;
+pub use session::{HostMeta, HostSessionState};
 pub use tool_index::ToolIndexSink;

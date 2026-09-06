@@ -7,9 +7,10 @@
 mod connection;
 
 use crate::config::HostServerConfig;
-use crate::event::{HostEvent, HostEventBus, HostHandlerRegistry};
+use crate::event::{HostEvent, HostEventBus};
 use crate::namespace::HostNamespaceRegistry;
 use crate::request_task::{RequestOutcome, RequestTask, RequestTaskManager};
+use crate::session::{HostMeta, HostSessionManager};
 use crate::tool_index::ToolIndexSink;
 use bento_protocol::commands::tool_command;
 use bento_protocol::dispatch::OutboundFrame;
@@ -47,8 +48,7 @@ use tokio_util::sync::CancellationToken;
 pub struct HostServer {
     config: HostServerConfig,
 
-    /// A map of session_id to HostHandler
-    handlers: HostHandlerRegistry,
+    sessions: HostSessionManager,
 
     /// A map of namespace to session_id
     namespaces: HostNamespaceRegistry,
@@ -68,7 +68,7 @@ impl HostServer {
     pub fn new(config: &HostServerConfig, index_sink: Arc<dyn ToolIndexSink>) -> Self {
         Self {
             config: config.clone(),
-            handlers: HostHandlerRegistry::new(),
+            sessions: HostSessionManager::new(),
             namespaces: HostNamespaceRegistry::new(),
             bus: HostEventBus::new(),
             request_manager: RequestTaskManager::new(),
@@ -88,7 +88,7 @@ impl HostServer {
 
         let clone_token = self.config.token.clone();
         let clone_bus = self.bus.clone();
-        let clone_handlers = self.handlers.clone();
+        let clone_sessions = self.sessions.clone();
         let clone_namespace = self.namespaces.clone();
         let clone_request_manager = self.request_manager.clone();
         let clone_index_sink = self.tool_index_sink.clone();
@@ -98,7 +98,7 @@ impl HostServer {
             listener,
             clone_token,
             clone_bus,
-            clone_handlers,
+            clone_sessions,
             clone_namespace,
             clone_request_manager,
             clone_index_sink,
@@ -118,7 +118,7 @@ impl HostServer {
         session_id: String,
         frame: OutboundFrame,
     ) -> Result<(), Cow<'static, str>> {
-        let handler = match self.handlers.get(&session_id) {
+        let handler = match self.sessions.handler(&session_id) {
             Some(h) => h,
             None => return Err(Cow::Borrowed("Session Handler not found.")),
         };
@@ -134,7 +134,7 @@ impl HostServer {
         request: JsonRpcRequest,
         timeout: Duration,
     ) -> Result<JsonRpcResponse, Cow<'static, str>> {
-        let session_id = self.namespaces.session_id(namespace);
+        let session_id = self.namespaces.session_id(&namespace);
 
         match session_id {
             Some(s) => {
@@ -201,10 +201,8 @@ impl HostServer {
             None => Err(Cow::Borrowed("tool.result missing result")),
         }
     }
-}
 
-impl Drop for HostServer {
-    fn drop(&mut self) {
-        self.stop();
+    pub fn list_hosts(&self) -> Vec<HostMeta> {
+        self.sessions.list_hosts()
     }
 }

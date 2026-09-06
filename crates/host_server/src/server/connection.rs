@@ -5,9 +5,10 @@
  */
 use crate::namespace::HostNamespaceRegistry;
 use crate::request_task::RequestTaskManager;
+use crate::session::HostSessionManager;
 use crate::tool_index::ToolIndexSink;
 use crate::{
-    event::{HostEvent, HostEventBus, HostHandler, HostHandlerRegistry},
+    event::{HostEvent, HostEventBus, HostHandler},
     session::{HostSession, HostSessionState},
 };
 use bento_protocol::error::ErrorCode;
@@ -45,7 +46,7 @@ use tracing::{error, warn};
     listener,
     token,
     bus,
-    handlers,
+    sessions,
     namespaces,
     request_manager,
     index_sink,
@@ -55,7 +56,7 @@ pub(super) async fn listen_connection(
     listener: TcpListener,
     token: String,
     bus: HostEventBus,
-    handlers: HostHandlerRegistry,
+    sessions: HostSessionManager,
     namespaces: HostNamespaceRegistry,
     request_manager: RequestTaskManager,
     index_sink: Arc<dyn ToolIndexSink>,
@@ -72,14 +73,14 @@ pub(super) async fn listen_connection(
                     Ok((tcp, _)) => {
                         let clone_token = token.clone();
                         let clone_bus = bus.clone();
-                        let clone_handlers = handlers.clone();
+                        let clone_sessions = sessions.clone();
                         let clone_namespaces = namespaces.clone();
                         let clone_request_manager = request_manager.clone();
                         let clone_index_sink = index_sink.clone();
                         let clone_shutdown = shutdown.child_token();
 
                         tokio::spawn(async move {
-                            handle_connection(tcp, clone_token, clone_bus, clone_handlers, clone_namespaces, clone_request_manager,
+                            handle_connection(tcp, clone_token, clone_bus, clone_sessions, clone_namespaces, clone_request_manager,
                             clone_index_sink, clone_shutdown).await;
                         });
                     }
@@ -97,7 +98,7 @@ pub(super) async fn listen_connection(
     tcp,
     token,
     bus,
-    handlers,
+    sessions,
     namespaces,
     request_manager,
     index_sink,
@@ -107,7 +108,7 @@ async fn handle_connection(
     tcp: TcpStream,
     token: String,
     bus: HostEventBus,
-    handlers: HostHandlerRegistry,
+    sessions: HostSessionManager,
     namespaces: HostNamespaceRegistry,
     request_manager: RequestTaskManager,
     index_sink: Arc<dyn ToolIndexSink>,
@@ -151,10 +152,10 @@ async fn handle_connection(
 
     let handler = HostHandler::new(sender);
 
-    // Insert new Handler for new host session.
-    handlers.register(session_id.clone(), handler.clone());
+    let session = Arc::new(HostSession::new(session_id.clone(), handler));
 
-    let mut session = HostSession::new(session_id.clone(), handler);
+    // Insert new HostSession
+    sessions.register(session.clone());
 
     // Broadcast new host session event.
     bus.emit(HostEvent::HostConnected {
@@ -177,7 +178,7 @@ async fn handle_connection(
             msg = reader.next() => match msg {
                 Some(Ok(msg)) => {
                     if !handle_message(
-                        &mut session,
+                        &session,
                         msg,
                         &bus,
                         &namespaces,
@@ -198,15 +199,15 @@ async fn handle_connection(
     // 只有sender全部drop后，receiver的recv()才会返回None，所以这里先确保sender的两份副本drop: session、handlers
 
     request_manager.cancel_all_for_session(&session_id);
-    handlers.remove(&session_id); // 释放sender
+    sessions.remove(&session_id); // 释放sender
 
     if let Err(err) = index_sink.remove(&session_id).await {
         warn!("Failed to remove tools for session {}: {}", session_id, err);
     }
 
-    namespaces.release(session.namespace.clone());
+    namespaces.release(&session.get_meta().namespace);
 
-    session.state = HostSessionState::Closed;
+    session.update_meta(|m| m.state = HostSessionState::Closed);
     drop(session); // 释放sender
 
     let _ = write_task.await;
@@ -216,7 +217,7 @@ async fn handle_connection(
 
 #[tracing::instrument(skip(session, msg, bus, namespaces, request_manager, index_sink))]
 async fn handle_message(
-    session: &mut HostSession,
+    session: &Arc<HostSession>,
     msg: Message,
     bus: &HostEventBus,
     namespaces: &HostNamespaceRegistry,
@@ -266,14 +267,14 @@ async fn handle_message(
 #[tracing::instrument(skip(frame, session, bus, namespaces, request_manager, index_sink))]
 async fn handle_inbound_frame(
     frame: InboundFrame,
-    session: &mut HostSession,
+    session: &Arc<HostSession>,
     bus: &HostEventBus,
     namespaces: &HostNamespaceRegistry,
     request_manager: &RequestTaskManager,
     index_sink: &Arc<dyn ToolIndexSink>,
 ) {
     match frame {
-        InboundFrame::Request(request) => match (session.state, request.method.as_str()) {
+        InboundFrame::Request(request) => match (session.info().state, request.method.as_str()) {
             (HostSessionState::Connecting, host_command::HOST_HELLO) => {
                 handle_host_hello(session, request, bus, namespaces).await;
             }
@@ -289,7 +290,7 @@ async fn handle_inbound_frame(
         },
 
         InboundFrame::Notification(notification) => {
-            match (session.state, notification.method.as_str()) {
+            match (session.info().state, notification.method.as_str()) {
                 (HostSessionState::Registered, host_command::HOST_READY) => {
                     handle_host_ready(session, notification, bus, index_sink).await;
                 }
@@ -313,7 +314,7 @@ async fn handle_inbound_frame(
 
 #[tracing::instrument(skip(session, request, bus, namespaces))]
 async fn handle_host_hello(
-    session: &mut HostSession,
+    session: &Arc<HostSession>,
     request: JsonRpcRequest,
     bus: &HostEventBus,
     namespaces: &HostNamespaceRegistry,
@@ -326,9 +327,11 @@ async fn handle_host_hello(
             let namespace =
                 namespaces.register(rpc.params.host_name.clone(), session.session_id.clone());
 
-            session.state = HostSessionState::Helloed;
-            session.name = rpc.params.host_name;
-            session.namespace = namespace.clone();
+            session.update_meta(|m| {
+                m.state = HostSessionState::Helloed;
+                m.name = rpc.params.host_name.clone();
+                m.namespace = namespace.clone();
+            });
 
             // Broadcast host.hello event
             bus.emit(HostEvent::HostHelloed {
@@ -366,7 +369,7 @@ async fn handle_host_hello(
 
 #[tracing::instrument(skip(session, request, bus, index_sink))]
 async fn handle_tool_register(
-    session: &mut HostSession,
+    session: &Arc<HostSession>,
     request: JsonRpcRequest,
     bus: &HostEventBus,
     index_sink: &Arc<dyn ToolIndexSink>,
@@ -405,21 +408,20 @@ async fn handle_tool_register(
                     }
                 }
             } else {
+                let info = session.info();
                 let response = match index_sink
-                    .replace(
-                        &session.session_id,
-                        &session.name,
-                        &session.namespace,
-                        tools,
-                    )
+                    .replace(&session.session_id, &info.name, &info.namespace, tools)
                     .await
                 {
                     Ok(count) => {
-                        session.state = HostSessionState::Registered;
+                        session.update_meta(|m| {
+                            m.state = HostSessionState::Registered;
+                            m.tool_count = count;
+                        });
 
                         // Broadcast host registered event
                         bus.emit(HostEvent::HostRegistered {
-                            namespace: session.namespace.clone(),
+                            namespace: info.namespace.clone(),
                             tool_count: count,
                         });
 
@@ -467,14 +469,14 @@ async fn handle_tool_register(
 
 #[tracing::instrument(skip(session, notification, bus, index_sink))]
 async fn handle_host_ready(
-    session: &mut HostSession,
+    session: &Arc<HostSession>,
     notification: JsonRpcNotification,
     bus: &HostEventBus,
     index_sink: &Arc<dyn ToolIndexSink>,
 ) {
     match from_notification::<HostReadyParam>(notification) {
         Ok(_rpc) => {
-            session.state = HostSessionState::Ready;
+            session.update_meta(|m| m.state = HostSessionState::Ready);
 
             if let Err(err) = index_sink.ready(&session.session_id).await {
                 warn!(

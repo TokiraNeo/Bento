@@ -61,9 +61,3 @@ impl AgentServer {
         self.cancel_signal.cancel();
     }
 }
-
-impl Drop for AgentServer {
-    fn drop(&mut self) {
-        self.stop();
-    }
-}

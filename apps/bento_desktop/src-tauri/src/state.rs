@@ -7,10 +7,12 @@ use crate::approval::BentoApprovalHandler;
 use bento_core::{CoreConfig, CoreEngine};
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
+use tauri::AppHandle;
 
 pub(crate) struct BentoAppState {
     pub config_path: PathBuf,
     pub config: RwLock<CoreConfig>,
+    pub app: AppHandle,
     pub engine: RwLock<Option<Arc<CoreEngine>>>,
     pub approval_handler: Arc<BentoApprovalHandler>,
 }

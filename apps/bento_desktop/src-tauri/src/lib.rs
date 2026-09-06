@@ -29,6 +29,7 @@ pub fn run() {
             app.manage(BentoAppState {
                 config_path,
                 config: RwLock::new(config),
+                app: app.handle().clone(),
                 engine: RwLock::new(None),
                 approval_handler: Arc::new(BentoApprovalHandler::new(app.handle().clone())),
             });

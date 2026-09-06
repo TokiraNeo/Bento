@@ -9,7 +9,7 @@ use bento_tool_rag::ToolRagConfig;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-#[derive(Default, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct CoreConfig {
     #[serde(default = "default_protocol_version")]
     pub protocol_version: String,
@@ -28,7 +28,7 @@ fn default_protocol_version() -> String {
 impl Default for CoreConfig {
     fn default() -> Self {
         Self {
-            protocol_version: "2026-07-28".into(),
+            protocol_version: default_protocol_version(),
             host_server: HostServerConfig::default(),
             agent_server: AgentServerConfig::default(),
             tool_rag: ToolRagConfig::default(),

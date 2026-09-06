@@ -9,7 +9,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
 
-export function toolApproval() {
+export function handleToolApproval() {
   const [pending, setPending] = useState<ToolApprovalRequest[]>([]);
 
   useEffect(() => {

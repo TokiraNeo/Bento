@@ -48,16 +48,16 @@ impl HostNamespaceRegistry {
         namespace
     }
 
-    pub fn release(&self, namespace: String) {
+    pub fn release(&self, namespace: &str) {
         if !namespace.is_empty() {
-            self.map.lock().unwrap().remove(&namespace);
+            self.map.lock().unwrap().remove(namespace);
         }
     }
 
-    pub fn session_id(&self, namespace: String) -> Option<String> {
+    pub fn session_id(&self, namespace: &str) -> Option<String> {
         if namespace.is_empty() {
             return None;
         }
-        self.map.lock().unwrap().get(&namespace).cloned()
+        self.map.lock().unwrap().get(namespace).cloned()
     }
 }
