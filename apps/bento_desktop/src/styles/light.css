@@ -1,0 +1,113 @@
+/*
+ * ---- Bento ----
+ * Copyright (C) 2026-present TokiraNeo <TokiraNeo@outlook.com>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+:root {
+  /* ===== 原始色板 ===== */
+  /* 中性 */
+  --neutral-0: #ffffff;
+  --neutral-50: #fafbfc;
+  --neutral-100: #f3f4f6;
+  --neutral-200: #e5e7eb;
+  --neutral-300: #d1d5db;
+  --neutral-400: #9ca3af;
+  --neutral-500: #6b7280;
+  --neutral-600: #4b5563;
+  --neutral-700: #374151;
+  --neutral-800: #1f2937;
+  --neutral-900: #111827;
+
+  /* 主色 */
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+
+  /* 语义色 */
+  --green-500: #22c55e;
+  --amber-500: #f59e0b;
+  --red-500: #ef4444;
+
+  /* ===== 语义 token ===== */
+  /* 背景 / 表面 */
+  --bg: var(--neutral-50);
+  --bg-subtle: var(--neutral-100);
+  --surface: var(--neutral-0);
+  --surface-glass: rgba(255, 255, 255, 0.62);
+
+  /* 文本 */
+  --text: var(--neutral-800);
+  --text-secondary: var(--neutral-500);
+  --text-muted: var(--neutral-400);
+  --text-on-accent: #ffffff;
+
+  /* 边框 */
+  --border: var(--neutral-200);
+  --border-subtle: var(--neutral-100);
+  --border-glass: rgba(255, 255, 255, 0.55);
+
+  /* 主色 */
+  --accent: var(--blue-500);
+  --accent-hover: var(--blue-600);
+
+  /* 语义状态 */
+  --success: var(--green-500);
+  --warning: var(--amber-500);
+  --danger: var(--red-500);
+
+  /* 风险等级（审批面板直接用） */
+  --risk-normal: var(--amber-500);
+  --risk-high: var(--red-500);
+
+  /* 间距（4px 基数） */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  /* 阴影（低对比、柔和） */
+  --shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.04);
+  --shadow-md: 0 4px 16px rgba(17, 24, 39, 0.06);
+  --shadow-lg: 0 12px 40px rgba(17, 24, 39, 0.1);
+
+  /* 玻璃质感 */
+  --glass-blur: 20px;
+  --glass-saturate: 180%;
+
+  /* 字体 */
+  --font-sans: "Inter", -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, monospace;
+
+  /* 字号 / 字重 */
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  /* 动效 */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+}
+
+/* 玻璃表面全局工具类（light.css 在 main.tsx 全局 import，组件直接 className="glass"） */
+.glass {
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-md);
+}

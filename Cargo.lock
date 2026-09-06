@@ -444,11 +444,13 @@ version = "1.0.0"
 dependencies = [
  "async-trait",
  "bento_core",
+ "bento_utility",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
+ "tokio",
 ]
 
 [[package]]

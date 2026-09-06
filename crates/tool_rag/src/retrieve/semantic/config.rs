@@ -8,8 +8,6 @@ use serde::{Deserialize, Serialize};
 /// 语义检索通道配置
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SemanticRetrieveConfig {
-    pub enabled: bool,
-
     /// 语义召回截断条数
     pub candidate: usize,
 }
@@ -17,7 +15,6 @@ pub struct SemanticRetrieveConfig {
 impl Default for SemanticRetrieveConfig {
     fn default() -> Self {
         Self {
-            enabled: false,
             candidate: 5,
         }
     }

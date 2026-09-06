@@ -1,0 +1,72 @@
+/*
+ * ---- Bento ----
+ * Copyright (C) 2026-present TokiraNeo <TokiraNeo@outlook.com>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+.shell {
+  display: flex;
+  gap: var(--space-4);
+  height: 100%;
+  padding: var(--space-4);
+  background: linear-gradient(160deg, var(--neutral-50) 0%, var(--neutral-100) 100%);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 208px;
+  flex-shrink: 0;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.brand {
+  padding: 0 var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--text);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.navItem {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  text-align: left;
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  transition:
+    background var(--duration-fast) var(--ease),
+    color var(--duration-fast) var(--ease);
+}
+
+.navItem:hover {
+  background: var(--bg-subtle);
+  color: var(--text);
+}
+
+.navItemActive {
+  background: var(--bg-subtle);
+  color: var(--accent);
+  font-weight: var(--weight-medium);
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.placeholder {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}

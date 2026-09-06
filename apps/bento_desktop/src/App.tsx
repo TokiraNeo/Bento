@@ -1,50 +1,53 @@
+/*
+ * ---- Bento ----
+ * Copyright (C) 2026-present TokiraNeo <TokiraNeo@outlook.com>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { ConfigPanel } from "@components/config/ConfigPanel";
+import styles from "./App.module.css";
+
+type Tab = "hosts" | "tools" | "config" | "logs";
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: "hosts", label: "Hosts" },
+  { key: "tools", label: "Tools" },
+  { key: "config", label: "Config" },
+  { key: "logs", label: "Logs" },
+];
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  const [tab, setTab] = useState<Tab>("config");
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    <div className={styles.shell}>
+      <aside className={`glass ${styles.sidebar}`}>
+        <div className={styles.brand}>Bento</div>
+        <nav className={styles.nav}>
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              className={`${styles.navItem} ${tab === t.key ? styles.navItemActive : ""}`}
+              onClick={() => setTab(t.key)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
+      </aside>
+      <main className={`glass ${styles.content}`}>
+        {tab === "config" && <ConfigPanel />}
+        {tab === "hosts" && (
+          <span className={styles.placeholder}>Hosts</span>
+        )}
+        {tab === "tools" && (
+          <span className={styles.placeholder}>Tools</span>
+        )}
+        {tab === "logs" && (
+          <span className={styles.placeholder}>Logs</span>
+        )}
+      </main>
+    </div>
   );
 }
 
