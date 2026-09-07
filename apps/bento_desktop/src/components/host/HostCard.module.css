@@ -1,0 +1,68 @@
+/*
+ * ---- Bento ----
+ * Copyright (C) 2026-present TokiraNeo <TokiraNeo@outlook.com>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  transition: var(--glow-transition);
+}
+
+.card:hover {
+  border-color: var(--accent-soft);
+  box-shadow:
+    0 0 0 1px var(--accent-soft),
+    0 0 18px 2px var(--accent-glow);
+}
+
+/* 节点端口隐喻：左上角一个小圆点 */
+.port {
+  position: absolute;
+  top: -4px;
+  left: var(--space-4);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-soft);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.namespace {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.name {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+}
+
+.toolCount {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}

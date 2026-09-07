@@ -9,5 +9,5 @@ export interface ToolApprovalRequest {
   qualified_name: string;
   namespace: string;
   tool_name: string;
-  arguments: Record<string, any>; // Json Value
+  arguments: Record<string, unknown>;
 }

@@ -5,6 +5,9 @@
  */
 import { useState } from "react";
 import { ConfigPanel } from "@components/config/ConfigPanel";
+import { HostsPanel } from "@components/host/HostsPanel";
+import { ApprovalOverlay } from "@components/approval/ApprovalOverlay";
+import { useToolApproval } from "@bridge/events/approval_events";
 import styles from "./App.module.css";
 
 type Tab = "hosts" | "tools" | "config" | "logs";
@@ -18,9 +21,11 @@ const TABS: { key: Tab; label: string }[] = [
 
 function App() {
   const [tab, setTab] = useState<Tab>("config");
+  const { pending, respond } = useToolApproval();
 
   return (
     <div className={styles.shell}>
+      <div className={`iridescent ${styles.iridescentLayer}`} aria-hidden />
       <aside className={`glass ${styles.sidebar}`}>
         <div className={styles.brand}>Bento</div>
         <nav className={styles.nav}>
@@ -37,9 +42,7 @@ function App() {
       </aside>
       <main className={`glass ${styles.content}`}>
         {tab === "config" && <ConfigPanel />}
-        {tab === "hosts" && (
-          <span className={styles.placeholder}>Hosts</span>
-        )}
+        {tab === "hosts" && <HostsPanel />}
         {tab === "tools" && (
           <span className={styles.placeholder}>Tools</span>
         )}
@@ -47,6 +50,14 @@ function App() {
           <span className={styles.placeholder}>Logs</span>
         )}
       </main>
+
+      {pending.length > 0 && (
+        <ApprovalOverlay
+          current={pending[0]}
+          total={pending.length}
+          onRespond={respond}
+        />
+      )}
     </div>
   );
 }

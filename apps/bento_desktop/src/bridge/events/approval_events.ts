@@ -3,13 +3,12 @@
  * Copyright (C) 2026-present TokiraNeo <TokiraNeo@outlook.com>
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-
-import { ToolApprovalRequest } from "@bridge/types/tool_approval";
+import type { ToolApprovalRequest } from "@bridge/types/tool_approval";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
 
-export function handleToolApproval() {
+export function useToolApproval() {
   const [pending, setPending] = useState<ToolApprovalRequest[]>([]);
 
   useEffect(() => {

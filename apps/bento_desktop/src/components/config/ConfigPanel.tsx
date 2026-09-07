@@ -4,52 +4,17 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 import { useEffect, useState } from "react";
-import * as configApi from "@/bridge/commands/config_commands";
+import { getConfig, saveConfig } from "@bridge/commands/config_commands";
 import type { CoreConfig } from "@bridge/types/core_config";
+import { Field } from "@components/ui/Field";
 import styles from "./ConfigPanel.module.css";
-
-function NumberField(props: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <label className={styles.field}>
-      <span className={styles.fieldLabel}>{props.label}</span>
-      <input
-        type="number"
-        className={styles.input}
-        value={props.value}
-        onChange={(e) => props.onChange(Number(e.currentTarget.value))}
-      />
-    </label>
-  );
-}
-
-function TextField(props: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <label className={styles.field}>
-      <span className={styles.fieldLabel}>{props.label}</span>
-      <input
-        type="text"
-        className={styles.input}
-        value={props.value}
-        onChange={(e) => props.onChange(e.currentTarget.value)}
-      />
-    </label>
-  );
-}
 
 export function ConfigPanel() {
   const [config, setConfig] = useState<CoreConfig | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    configApi.getConfig().then(setConfig);
+    getConfig().then(setConfig);
   }, []);
 
   if (!config) {
@@ -64,7 +29,7 @@ export function ConfigPanel() {
   const { exact, lexical, semantic, fusion } = config.tool_rag;
 
   const save = async () => {
-    await configApi.saveConfig(config);
+    await saveConfig(config);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -81,26 +46,21 @@ export function ConfigPanel() {
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>宿主服务（WS）</h3>
         <div className={styles.grid}>
-          <TextField
+          <Field
             label="Host"
             value={host.host}
-            onChange={(v) =>
-              update({ host_server: { ...host, host: v } })
-            }
+            onChange={(v) => update({ host_server: { ...host, host: v } })}
           />
-          <NumberField
+          <Field
             label="Port"
+            type="number"
             value={host.port}
-            onChange={(v) =>
-              update({ host_server: { ...host, port: v } })
-            }
+            onChange={(v) => update({ host_server: { ...host, port: v } })}
           />
-          <TextField
+          <Field
             label="Token"
             value={host.token}
-            onChange={(v) =>
-              update({ host_server: { ...host, token: v } })
-            }
+            onChange={(v) => update({ host_server: { ...host, token: v } })}
           />
         </div>
       </section>
@@ -108,19 +68,16 @@ export function ConfigPanel() {
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Agent 服务（MCP）</h3>
         <div className={styles.grid}>
-          <TextField
+          <Field
             label="Host"
             value={agent.host}
-            onChange={(v) =>
-              update({ agent_server: { ...agent, host: v } })
-            }
+            onChange={(v) => update({ agent_server: { ...agent, host: v } })}
           />
-          <NumberField
+          <Field
             label="Port"
+            type="number"
             value={agent.port}
-            onChange={(v) =>
-              update({ agent_server: { ...agent, port: v } })
-            }
+            onChange={(v) => update({ agent_server: { ...agent, port: v } })}
           />
         </div>
       </section>
@@ -128,22 +85,25 @@ export function ConfigPanel() {
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>检索召回</h3>
         <div className={styles.grid}>
-          <NumberField
+          <Field
             label="精确通道截断"
+            type="number"
             value={exact.candidate}
             onChange={(v) =>
               update({ tool_rag: { ...config.tool_rag, exact: { ...exact, candidate: v } } })
             }
           />
-          <NumberField
+          <Field
             label="词法通道截断"
+            type="number"
             value={lexical.candidate}
             onChange={(v) =>
               update({ tool_rag: { ...config.tool_rag, lexical: { ...lexical, candidate: v } } })
             }
           />
-          <NumberField
+          <Field
             label="语义通道截断"
+            type="number"
             value={semantic.candidate}
             onChange={(v) =>
               update({ tool_rag: { ...config.tool_rag, semantic: { ...semantic, candidate: v } } })
@@ -155,29 +115,33 @@ export function ConfigPanel() {
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>融合权重（RRF）</h3>
         <div className={styles.grid}>
-          <NumberField
+          <Field
             label="RRF 平滑常数 k"
+            type="number"
             value={fusion.rrf_k}
             onChange={(v) =>
               update({ tool_rag: { ...config.tool_rag, fusion: { ...fusion, rrf_k: v } } })
             }
           />
-          <NumberField
+          <Field
             label="精确通道权重"
+            type="number"
             value={fusion.exact}
             onChange={(v) =>
               update({ tool_rag: { ...config.tool_rag, fusion: { ...fusion, exact: v } } })
             }
           />
-          <NumberField
+          <Field
             label="词法通道权重"
+            type="number"
             value={fusion.lexical}
             onChange={(v) =>
               update({ tool_rag: { ...config.tool_rag, fusion: { ...fusion, lexical: v } } })
             }
           />
-          <NumberField
+          <Field
             label="语义通道权重"
+            type="number"
             value={fusion.semantic}
             onChange={(v) =>
               update({ tool_rag: { ...config.tool_rag, fusion: { ...fusion, semantic: v } } })

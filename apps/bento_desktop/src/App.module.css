@@ -5,6 +5,7 @@
  */
 
 .shell {
+  position: relative;
   display: flex;
   gap: var(--space-4);
   height: 100%;
@@ -12,7 +13,16 @@
   background: linear-gradient(160deg, var(--neutral-50) 0%, var(--neutral-100) 100%);
 }
 
+.iridescentLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .sidebar {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -58,6 +68,8 @@
 }
 
 .content {
+  position: relative;
+  z-index: 1;
   flex: 1;
   display: flex;
   align-items: center;

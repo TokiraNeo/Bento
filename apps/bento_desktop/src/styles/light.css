@@ -101,6 +101,30 @@
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --duration-fast: 120ms;
   --duration-base: 200ms;
+
+  /* 极淡虹彩：低透明度的色相偏移，像玻璃折射而非霓虹 */
+  --iridescent: conic-gradient(
+    from 210deg at 50% 50%,
+    rgba(245, 240, 255, 0.6),
+    rgba(238, 245, 255, 0.6),
+    rgba(240, 255, 247, 0.6),
+    rgba(255, 247, 240, 0.6),
+    rgba(245, 240, 255, 0.6)
+  );
+
+  /* 流光细边框（渐变描边两端色） */
+  --edge-a: rgba(255, 255, 255, 0.85);
+  --edge-b: rgba(160, 190, 255, 0.28);
+  --edge-c: rgba(210, 255, 235, 0.22);
+
+  /* 选中 / 自发光（低 alpha，呼吸感而非霓虹） */
+  --accent-soft: rgba(59, 130, 246, 0.35);
+  --accent-glow: rgba(59, 130, 246, 0.18);
+
+  /* 自发光过渡 */
+  --glow-transition:
+    box-shadow var(--duration-base) var(--ease),
+    border-color var(--duration-base) var(--ease);
 }
 
 /* 玻璃表面全局工具类（light.css 在 main.tsx 全局 import，组件直接 className="glass"） */
@@ -110,4 +134,40 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border: 1px solid var(--border-glass);
   box-shadow: var(--shadow-md);
+}
+
+/* 极淡虹彩背景层：绝对定位垫在 shell 底，pointer-events 穿透 */
+.iridescent {
+  background: var(--iridescent);
+  filter: blur(60px) saturate(120%);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* 流光细边框：内部玻璃色、边框走渐变（padding-box / border-box 双层） */
+.iridescent-border {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--surface-glass), var(--surface-glass)) padding-box,
+    linear-gradient(
+        135deg,
+        var(--edge-a),
+        var(--edge-b),
+        var(--edge-c)
+      )
+      border-box;
+}
+
+/* 选中 / 悬停自发光：细亮边 + 外围柔光 */
+.glow {
+  border-color: var(--accent-soft);
+  box-shadow:
+    0 0 0 1px var(--accent-soft),
+    0 0 18px 2px var(--accent-glow);
+  transition: var(--glow-transition);
+}
+
+/* 等宽字体工具类 */
+.mono {
+  font-family: var(--font-mono);
 }

@@ -4,13 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-export enum HostSessionState {
-  Connecting,
-  Helloed,
-  Registered,
-  Ready,
-  Closed,
-}
+export type HostSessionState =
+  "Connecting" | "Helloed" | "Registered" | "Ready" | "Closed";
 
 export interface HostMeta {
   name: string;
