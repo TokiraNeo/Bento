@@ -159,11 +159,16 @@
 }
 
 /* 选中 / 悬停自发光：细亮边 + 外围柔光 */
-.glow {
+.glow,
+.glow-hover:hover {
   border-color: var(--accent-soft);
   box-shadow:
     0 0 0 1px var(--accent-soft),
     0 0 18px 2px var(--accent-glow);
+}
+
+.glow,
+.glow-hover {
   transition: var(--glow-transition);
 }
 

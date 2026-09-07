@@ -76,7 +76,10 @@ impl Drop for CoreEngine {
     }
 }
 
-async fn forward_host_events(host_server: Arc<HostServer>, bus: Arc<CoreEventBus>) {
+async fn forward_host_events(
+    host_server: Arc<HostServer>,
+    bus: Arc<CoreEventBus>,
+) -> Result<(), Cow<'static, str>> {
     let mut receiver = host_server.subscribe();
 
     loop {
@@ -89,4 +92,6 @@ async fn forward_host_events(host_server: Arc<HostServer>, bus: Arc<CoreEventBus
             }
         }
     }
+
+    Ok(())
 }

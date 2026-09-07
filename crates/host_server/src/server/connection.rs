@@ -274,7 +274,8 @@ async fn handle_inbound_frame(
     index_sink: &Arc<dyn ToolIndexSink>,
 ) {
     match frame {
-        InboundFrame::Request(request) => match (session.info().state, request.method.as_str()) {
+        InboundFrame::Request(request) => match (session.get_meta().state, request.method.as_str())
+        {
             (HostSessionState::Connecting, host_command::HOST_HELLO) => {
                 handle_host_hello(session, request, bus, namespaces).await;
             }
@@ -290,7 +291,7 @@ async fn handle_inbound_frame(
         },
 
         InboundFrame::Notification(notification) => {
-            match (session.info().state, notification.method.as_str()) {
+            match (session.get_meta().state, notification.method.as_str()) {
                 (HostSessionState::Registered, host_command::HOST_READY) => {
                     handle_host_ready(session, notification, bus, index_sink).await;
                 }
@@ -408,7 +409,7 @@ async fn handle_tool_register(
                     }
                 }
             } else {
-                let info = session.info();
+                let info = session.get_meta();
                 let response = match index_sink
                     .replace(&session.session_id, &info.name, &info.namespace, tools)
                     .await

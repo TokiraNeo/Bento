@@ -26,13 +26,13 @@ function App() {
   return (
     <div className={styles.shell}>
       <div className={`iridescent ${styles.iridescentLayer}`} aria-hidden />
-      <aside className={`glass ${styles.sidebar}`}>
+      <aside className={`glass iridescent-border ${styles.sidebar}`}>
         <div className={styles.brand}>Bento</div>
         <nav className={styles.nav}>
           {TABS.map((t) => (
             <button
               key={t.key}
-              className={`${styles.navItem} ${tab === t.key ? styles.navItemActive : ""}`}
+              className={`${styles.navItem} ${tab === t.key ? `${styles.navItemActive} glow` : ""}`}
               onClick={() => setTab(t.key)}
             >
               {t.label}
@@ -40,7 +40,7 @@ function App() {
           ))}
         </nav>
       </aside>
-      <main className={`glass ${styles.content}`}>
+      <main className={`glass iridescent-border ${styles.content}`}>
         {tab === "config" && <ConfigPanel />}
         {tab === "hosts" && <HostsPanel />}
         {tab === "tools" && (

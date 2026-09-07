@@ -19,8 +19,6 @@ use tauri::Manager;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(commands::runtime::plugin())
-        .plugin(commands::approval::plugin())
         .setup(|app| {
             let config_path = app.path().app_config_dir()?.join("config.json");
 
@@ -36,6 +34,7 @@ pub fn run() {
 
             Ok(())
         })
+        .invoke_handler(commands::command_handlers!())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

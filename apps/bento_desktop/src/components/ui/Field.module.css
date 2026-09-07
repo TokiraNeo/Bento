@@ -8,6 +8,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 0;
 }
 
 .label {
@@ -16,15 +17,20 @@
 }
 
 .input {
+  width: 100%;
+  min-width: 0;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-glass);
   border-radius: var(--radius-md);
-  background: var(--surface);
+  background: var(--surface-glass);
   color: var(--text);
-  transition: border-color var(--duration-fast) var(--ease);
+  transition: var(--glow-transition);
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent-soft);
+  box-shadow:
+    0 0 0 1px var(--accent-soft),
+    0 0 12px 1px var(--accent-glow);
 }

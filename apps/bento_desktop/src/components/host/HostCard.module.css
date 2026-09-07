@@ -11,14 +11,6 @@
   gap: var(--space-3);
   padding: var(--space-4);
   border-radius: var(--radius-lg);
-  transition: var(--glow-transition);
-}
-
-.card:hover {
-  border-color: var(--accent-soft);
-  box-shadow:
-    0 0 0 1px var(--accent-soft),
-    0 0 18px 2px var(--accent-glow);
 }
 
 /* 节点端口隐喻：左上角一个小圆点 */

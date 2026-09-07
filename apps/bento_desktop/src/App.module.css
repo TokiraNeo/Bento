@@ -53,7 +53,8 @@
   color: var(--text-secondary);
   transition:
     background var(--duration-fast) var(--ease),
-    color var(--duration-fast) var(--ease);
+    color var(--duration-fast) var(--ease),
+    var(--glow-transition);
 }
 
 .navItem:hover {
@@ -71,14 +72,16 @@
   position: relative;
   z-index: 1;
   flex: 1;
+  min-width: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
 .placeholder {
+  margin: auto;
   font-size: var(--text-sm);
   color: var(--text-muted);
 }

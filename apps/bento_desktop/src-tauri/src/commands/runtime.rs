@@ -8,40 +8,21 @@ use crate::events::core_events;
 use crate::state::BentoAppState;
 use bento_core::{CoreConfig, CoreEngine, CoreEvent};
 use std::sync::Arc;
-use tauri::plugin::{Builder, TauriPlugin};
-use tauri::{AppHandle, Emitter, Runtime, State, generate_handler};
-
-pub(crate) fn plugin<R: Runtime>() -> TauriPlugin<R> {
-    Builder::new("bento_runtime_plugin")
-        .setup(|app, api| {
-            // Init Plugin here
-            Ok(())
-        })
-        .on_event(|app, event| {
-            // Handle event here
-        })
-        .invoke_handler(generate_handler![
-            get_config,
-            save_config,
-            start_engine,
-            stop_engine,
-        ])
-        .build()
-}
+use tauri::{AppHandle, Emitter, State};
 
 #[tauri::command(rename_all = "snake_case")]
-fn get_config(state: State<BentoAppState>) -> CoreConfig {
+pub(crate) fn get_config(state: State<BentoAppState>) -> CoreConfig {
     state.config.read().unwrap().clone()
 }
 
 #[tauri::command(rename_all = "snake_case")]
-fn save_config(state: State<BentoAppState>, config: CoreConfig) {
+pub(crate) fn save_config(state: State<BentoAppState>, config: CoreConfig) {
     CoreConfig::write(&state.config_path, &config);
     *state.config.write().unwrap() = config;
 }
 
 #[tauri::command(rename_all = "snake_case")]
-fn start_engine(state: State<BentoAppState>) {
+pub(crate) fn start_engine(state: State<BentoAppState>) {
     let config = state.config.read().unwrap().clone();
     let approval_handler = state.approval_handler.clone();
 
@@ -68,7 +49,7 @@ fn start_engine(state: State<BentoAppState>) {
 }
 
 #[tauri::command(rename_all = "snake_case")]
-fn stop_engine(state: State<BentoAppState>) {
+pub(crate) fn stop_engine(state: State<BentoAppState>) {
     *state.engine.write().unwrap() = None;
 }
 

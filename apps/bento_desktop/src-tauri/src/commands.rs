@@ -4,5 +4,19 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-pub(super) mod approval;
-pub(super) mod runtime;
+pub(crate) mod approval;
+pub(crate) mod runtime;
+
+macro_rules! command_handlers {
+    () => {
+        tauri::generate_handler![
+            $crate::commands::approval::respond_tool_approval,
+            $crate::commands::runtime::get_config,
+            $crate::commands::runtime::save_config,
+            $crate::commands::runtime::start_engine,
+            $crate::commands::runtime::stop_engine,
+        ]
+    };
+}
+
+pub(super) use command_handlers;

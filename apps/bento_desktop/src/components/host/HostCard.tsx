@@ -27,7 +27,7 @@ export function HostCard(props: { host: HostMeta }) {
   const { host } = props;
 
   return (
-    <div className={`glass ${styles.card}`}>
+    <div className={`iridescent-border glow-hover ${styles.card}`}>
       <div className={styles.port} aria-hidden />
 
       <div className={styles.head}>
