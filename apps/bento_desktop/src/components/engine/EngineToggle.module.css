@@ -1,0 +1,11 @@
+/*
+ * ---- Bento ----
+ * Copyright (C) 2026-present TokiraNeo <TokiraNeo@outlook.com>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+.cluster {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}

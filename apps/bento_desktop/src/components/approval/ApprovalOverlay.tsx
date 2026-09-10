@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 import type { ToolApprovalRequest } from "@bridge/types/tool_approval";
+import { Button } from "@components/ui/Button";
 import styles from "./ApprovalOverlay.module.css";
 
 export function ApprovalOverlay(props: {
@@ -17,7 +18,7 @@ export function ApprovalOverlay(props: {
 
   return (
     <div className={styles.backdrop}>
-      <div className={`iridescent-border glass ${styles.dialog}`}>
+      <div className={`chrome ${styles.dialog}`}>
         <header className={styles.header}>
           <div className={styles.headerText}>
             <span className={styles.kicker}>工具调用审批</span>
@@ -39,18 +40,10 @@ export function ApprovalOverlay(props: {
         </div>
 
         <footer className={styles.footer}>
-          <button
-            className={styles.deny}
-            onClick={() => onRespond(current.id, false)}
-          >
+          <Button tone="danger" onClick={() => onRespond(current.id, false)}>
             拒绝
-          </button>
-          <button
-            className={styles.approve}
-            onClick={() => onRespond(current.id, true)}
-          >
-            批准
-          </button>
+          </Button>
+          <Button onClick={() => onRespond(current.id, true)}>批准</Button>
         </footer>
       </div>
     </div>

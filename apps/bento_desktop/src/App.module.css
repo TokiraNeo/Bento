@@ -7,7 +7,6 @@
 .shell {
   position: relative;
   display: flex;
-  gap: var(--space-4);
   height: 100%;
   padding: var(--space-4);
   background: linear-gradient(160deg, var(--neutral-50) 0%, var(--neutral-100) 100%);
@@ -20,20 +19,28 @@
   pointer-events: none;
 }
 
-.sidebar {
+.window {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  width: 208px;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
   border-radius: var(--radius-lg);
-  padding: var(--space-4);
+  overflow: hidden;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .brand {
-  padding: 0 var(--space-2);
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
   color: var(--text);
@@ -41,15 +48,14 @@
 
 .nav {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: var(--space-1);
 }
 
 .navItem {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-md);
-  text-align: left;
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   transition:
     background var(--duration-fast) var(--ease),
@@ -68,15 +74,19 @@
   font-weight: var(--weight-medium);
 }
 
+.topbarEnd {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
 .content {
-  position: relative;
-  z-index: 1;
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 

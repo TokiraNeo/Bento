@@ -1,0 +1,18 @@
+---
+description: Bento Desktop visual language — frosted chrome, flat content
+globs: apps/bento_desktop/src/**/*.{tsx,css}
+alwaysApply: false
+---
+
+# Desktop UI
+
+Style spec: `BentoDocs/Impl/desktop-ui-style.md`. Tokens live in `apps/bento_desktop/src/styles/light.css`.
+
+- Chrome (window shell, modal): `.chrome`. Top bar lives inside the same chrome — do not nest another `.chrome` or `.glass`.
+- Content tiles (HostCard, Config columns): `.iridescent-border` only — opaque `--surface`, no blur.
+- Content (type, fields, lists, logs, badges, buttons): Flat 2.0. Use `Button` for primary/danger actions.
+- Iridescence is atmosphere and edges only. Glow is for selected/focus/hover, not neon.
+- No Neumorphism, no page-wide Glassmorphism, no dark cyber HUD.
+- Use CSS variables from `light.css`. Do not hardcode hex in components.
+- Primary actions: solid `--accent`. Deny/destructive: `--danger` outline.
+- Tool names, namespaces, JSON: `--font-mono`.

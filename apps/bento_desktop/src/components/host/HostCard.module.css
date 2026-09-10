@@ -35,6 +35,7 @@
 .namespace {
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
+  font-family: var(--font-mono);
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;

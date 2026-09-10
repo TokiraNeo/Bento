@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { getConfig, saveConfig } from "@bridge/commands/config_commands";
 import type { CoreConfig } from "@bridge/types/core_config";
 import { Field } from "@components/ui/Field";
+import { Button } from "@components/ui/Button";
 import styles from "./ConfigPanel.module.css";
 
 export function ConfigPanel() {
@@ -45,13 +46,13 @@ export function ConfigPanel() {
     <div className={styles.panel}>
       <div className={styles.header}>
         <h2 className={styles.title}>配置</h2>
-        <button className={styles.save} onClick={save}>
+        <Button onClick={() => void save()}>
           {saved ? "已保存" : "保存"}
-        </button>
+        </Button>
       </div>
 
       <div className={styles.columns}>
-        <section className={`iridescent-border glow-hover ${styles.column}`}>
+        <section className={`iridescent-border ${styles.column}`}>
           <h3 className={styles.columnTitle}>服务连接</h3>
 
           <div className={styles.block}>
@@ -96,7 +97,7 @@ export function ConfigPanel() {
           </div>
         </section>
 
-        <section className={`iridescent-border glow-hover ${styles.column}`}>
+        <section className={`iridescent-border ${styles.column}`}>
           <h3 className={styles.columnTitle}>工具检索</h3>
 
           <div className={styles.block}>

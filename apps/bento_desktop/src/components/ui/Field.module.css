@@ -20,17 +20,18 @@
   width: 100%;
   min-width: 0;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border-glass);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--surface-glass);
+  background: var(--surface);
   color: var(--text);
+  box-shadow: var(--shadow-sm);
   transition: var(--glow-transition);
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--accent-soft);
   box-shadow:
+    var(--shadow-sm),
     0 0 0 1px var(--accent-soft),
     0 0 12px 1px var(--accent-glow);
 }

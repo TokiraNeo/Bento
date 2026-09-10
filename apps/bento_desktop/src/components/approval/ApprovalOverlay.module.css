@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(17, 24, 39, 0.18);
+  background: var(--overlay);
   backdrop-filter: blur(2px);
 }
 
@@ -104,32 +104,4 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
-}
-
-.approve,
-.deny {
-  padding: var(--space-2) var(--space-5);
-  border-radius: var(--radius-md);
-  font-weight: var(--weight-medium);
-  transition:
-    background var(--duration-fast) var(--ease),
-    border-color var(--duration-fast) var(--ease);
-}
-
-.approve {
-  background: var(--accent);
-  color: var(--text-on-accent);
-}
-
-.approve:hover {
-  background: var(--accent-hover);
-}
-
-.deny {
-  border: 1px solid var(--danger);
-  color: var(--danger);
-}
-
-.deny:hover {
-  background: color-mix(in srgb, var(--danger) 10%, transparent);
 }
