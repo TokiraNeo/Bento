@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "bento": {
-      "url": "http://127.0.0.1:2483/mcp"
+      "url": "http://127.0.0.1:3752/mcp"
     }
   }
 }
