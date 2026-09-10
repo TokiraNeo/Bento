@@ -45,7 +45,7 @@ impl ToolApprovalHandler for BentoApprovalHandler {
         // 唤起前端弹窗
         let _ = self
             .app
-            .emit(events::approval::TOOL_APPROVAL_REQUEST, &request);
+            .emit(events::approval_events::TOOL_APPROVAL_REQUEST, &request);
 
         match tokio::time::timeout(Duration::from_mins(1), receiver).await {
             Ok(Ok(approval)) => approval,

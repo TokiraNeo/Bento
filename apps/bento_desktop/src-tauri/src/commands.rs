@@ -13,6 +13,7 @@ macro_rules! command_handlers {
             $crate::commands::approval::respond_tool_approval,
             $crate::commands::runtime::get_config,
             $crate::commands::runtime::save_config,
+            $crate::commands::runtime::engine_running,
             $crate::commands::runtime::start_engine,
             $crate::commands::runtime::stop_engine,
         ]
