@@ -49,6 +49,10 @@ button {
   cursor: pointer;
 }
 
+[data-tauri-drag-region] {
+  app-region: drag;
+}
+
 a {
   color: var(--accent);
   text-decoration: none;

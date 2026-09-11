@@ -4,27 +4,27 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { useEffect, useRef } from "react";
-import { HostMeta } from "@bridge/types/host";
+import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { listHosts } from "@bridge/commands/host_commands";
+import type { HostMeta } from "@bridge/types/host";
 
-type OnChangedCallback = (hosts: HostMeta[]) => void;
-
-export function useHosts(onChanged?: OnChangedCallback) {
-  const onChangedRef = useRef(onChanged);
-  onChangedRef.current = onChanged;
+export function useHosts() {
+  const [hosts, setHosts] = useState<HostMeta[]>([]);
 
   useEffect(() => {
+    listHosts()
+      .then(setHosts)
+      .catch(() => setHosts([]));
+
     const unlisten = listen<HostMeta[]>("hosts-changed", (event) => {
-      onChangedRef.current?.(event.payload);
+      setHosts(event.payload);
     });
 
     return () => {
-      unlisten.then((fn) => {
-        fn();
-      });
+      unlisten.then((fn) => fn());
     };
   }, []);
 
-  return {  };
+  return hosts;
 }

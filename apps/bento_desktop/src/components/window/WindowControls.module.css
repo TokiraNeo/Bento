@@ -1,0 +1,33 @@
+/*
+ * ---- Bento ----
+ * Copyright (C) 2026-present TokiraNeo <TokiraNeo@outlook.com>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+.cluster {
+  display: flex;
+  align-self: stretch;
+  margin-right: calc(-1 * var(--space-4));
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  color: var(--text-secondary);
+  border-radius: 0;
+  transition:
+    background var(--duration-fast) var(--ease),
+    color var(--duration-fast) var(--ease);
+}
+
+.control:hover {
+  background: var(--bg-subtle);
+  color: var(--text);
+}
+
+.close:hover {
+  background: var(--danger);
+  color: var(--text-on-accent);
+}

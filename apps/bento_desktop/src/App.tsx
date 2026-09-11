@@ -9,6 +9,7 @@ import { HostsPanel } from "@components/host/HostsPanel";
 import { ApprovalOverlay } from "@components/approval/ApprovalOverlay";
 import { useToolApproval } from "@bridge/events/approval_events";
 import { EngineToggle } from "@components/engine/EngineToggle";
+import { WindowControls } from "@components/window/WindowControls";
 import styles from "./App.module.css";
 
 type Tab = "hosts" | "tools" | "config" | "logs";
@@ -29,7 +30,9 @@ function App() {
       <div className={`iridescent ${styles.iridescentLayer}`} aria-hidden />
       <div className={`chrome ${styles.window}`}>
         <header className={styles.topbar}>
-          <div className={styles.brand}>Bento</div>
+          <div className={styles.brand} data-tauri-drag-region>
+            Bento
+          </div>
           <nav className={styles.nav}>
             {TABS.map((t) => (
               <button
@@ -41,8 +44,10 @@ function App() {
               </button>
             ))}
           </nav>
+          <div className={styles.drag} data-tauri-drag-region />
           <div className={styles.topbarEnd}>
             <EngineToggle />
+            <WindowControls />
           </div>
         </header>
         <main className={styles.content}>

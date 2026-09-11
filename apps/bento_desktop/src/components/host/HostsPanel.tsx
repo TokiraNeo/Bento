@@ -3,16 +3,12 @@
  * Copyright (C) 2026-present TokiraNeo <TokiraNeo@outlook.com>
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-import { useState } from "react";
-import type { HostMeta } from "@bridge/types/host";
 import { useHosts } from "@bridge/events/host_events";
 import { HostCard } from "./HostCard";
 import styles from "./HostsPanel.module.css";
 
 export function HostsPanel() {
-  const [hosts, setHosts] = useState<HostMeta[]>([]);
-
-  useHosts(setHosts);
+  const hosts = useHosts();
 
   return (
     <div className={styles.panel}>
