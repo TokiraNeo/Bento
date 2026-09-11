@@ -7,6 +7,7 @@
 **A tool search engine for AI agents.**
 
 ![Rust](https://img.shields.io/badge/Rust-1.85+-e44c26?style=flat-square&logo=rust&logoColor=white)
+![Version](https://img.shields.io/badge/version-1.0.0-3d5a80?style=flat-square)
 ![License](https://img.shields.io/badge/License-GPL--3.0-333850?style=flat-square&logo=gnu&logoColor=white)
 ![Status](https://img.shields.io/badge/status-early--stage-e8a33d?style=flat-square)
 ![Arch](https://img.shields.io/badge/platform-Windows%20%2F%20macOS%20%2F%20Linux-6c7293?style=flat-square)
