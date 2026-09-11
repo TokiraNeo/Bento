@@ -77,6 +77,13 @@ Agent 层（Codex / OpenCode / Cursor ...）
 
 ---
 
+## 文档
+
+- [连接与调用](docs/flow.md) — 宿主如何连上 Bento，Agent 如何搜和调工具
+- [宿主 JSON-RPC](docs/jsonrpc.md) — 当前支持的 method / params / result
+
+---
+
 ## 工程布局
 
 ```
