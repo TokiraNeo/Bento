@@ -18,7 +18,7 @@ fn is_cjk(c: char) -> bool {
 pub(crate) struct LexicalTokenizer;
 
 impl LexicalTokenizer {
-    /// 把 `text` 切成词元。建倒排和解析查询共用。
+    /// 把 `text` 切成词元(统一小写)。建倒排和解析查询共用。
     pub fn tokenize(text: &str) -> Vec<String> {
         if text.is_empty() {
             return Vec::new();
