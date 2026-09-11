@@ -6,7 +6,7 @@
 
 use crate::events::{core_events, engine_events};
 use crate::state::BentoAppState;
-use bento_core::{CoreConfig, CoreEngine, CoreEvent};
+use bento_core::{CoreConfig, CoreEngine, CoreEvent, HostMeta};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
 
@@ -59,6 +59,7 @@ pub(crate) fn start_engine(state: State<BentoAppState>) {
             }
 
             let _ = app.emit(engine_events::ENGINE_STATUS, false);
+            let _ = app.emit(core_events::HOSTS_CHANGED, &Vec::<HostMeta>::new());
         });
     }
 
@@ -80,6 +81,7 @@ pub(crate) fn stop_engine(state: State<BentoAppState>) {
         engine.stop();
     }
     let _ = state.app.emit(engine_events::ENGINE_STATUS, false);
+    let _ = state.app.emit(core_events::HOSTS_CHANGED, &Vec::<HostMeta>::new());
 }
 
 async fn handle_core_events(app: AppHandle, engine: Arc<CoreEngine>) {

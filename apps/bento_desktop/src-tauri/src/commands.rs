@@ -5,6 +5,7 @@
  */
 
 pub(crate) mod approval;
+pub(crate) mod hosts;
 pub(crate) mod runtime;
 
 macro_rules! command_handlers {
@@ -16,6 +17,7 @@ macro_rules! command_handlers {
             $crate::commands::runtime::engine_running,
             $crate::commands::runtime::start_engine,
             $crate::commands::runtime::stop_engine,
+            $crate::commands::hosts::list_hosts,
         ]
     };
 }

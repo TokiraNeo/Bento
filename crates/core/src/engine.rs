@@ -64,6 +64,10 @@ impl CoreEngine {
         self.bus.subscribe()
     }
 
+    pub fn list_hosts(&self) -> Vec<crate::HostMeta> {
+        self.host_server.list_hosts()
+    }
+
     pub fn stop(&self) {
         self.host_server.stop();
         self.agent_server.stop();
