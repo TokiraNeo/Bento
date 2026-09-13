@@ -8,6 +8,14 @@ use rmcp::schemars;
 use serde::Deserialize;
 use serde_json::Value;
 
+fn json_object_schema(_gen: &mut schemars::SchemaGenerator) -> schemars::Schema {
+    schemars::json_schema!({
+        "type": "object",
+        "additionalProperties": true,
+        "description": "Arguments forwarded to the host tool"
+    })
+}
+
 #[derive(Deserialize, schemars::JsonSchema)]
 pub(super) struct SearchToolParams {
     pub text: String,
@@ -22,6 +30,7 @@ pub(super) struct GetToolSchemaParams {
 #[derive(Deserialize, schemars::JsonSchema)]
 pub(super) struct CallToolParams {
     pub name: String,
+    #[schemars(schema_with = "json_object_schema")]
     pub arguments: Value,
     pub timeout_ms: u64,
 }

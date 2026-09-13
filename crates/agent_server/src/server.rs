@@ -8,7 +8,6 @@ mod mcp;
 
 use crate::AgentServerConfig;
 use crate::tool_query::ToolQuerySink;
-use axum::ServiceExt;
 use mcp::AgentMcpServer;
 use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
 use rmcp::transport::{StreamableHttpServerConfig, StreamableHttpService};
@@ -42,7 +41,9 @@ impl AgentServer {
         let service = StreamableHttpService::new(
             move || Ok(AgentMcpServer::new(sink.clone())),
             LocalSessionManager::default().into(),
-            StreamableHttpServerConfig::default().with_cancellation_token(ct.child_token()),
+            StreamableHttpServerConfig::default()
+                .with_cancellation_token(ct.child_token())
+                .with_json_response(true),
         );
 
         let router = axum::Router::new().nest_service("/mcp", service);

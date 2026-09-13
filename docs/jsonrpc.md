@@ -67,7 +67,6 @@
 | 字段 | 类型 |
 |---|---|
 | `namespace` | string |
-| `protocol_version` | string |
 | `bento_version` | string |
 
 ### `ToolRegisterResult`

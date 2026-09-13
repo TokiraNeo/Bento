@@ -6,7 +6,7 @@
 mod tool_params;
 
 use crate::ToolQuerySink;
-use bento_protocol::tool::{ToolRisk, ToolSearchQuery};
+use bento_protocol::tool::ToolSearchQuery;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::{CallToolResult, ContentBlock, ProtocolVersion, ServerCapabilities, ServerInfo};
 use rmcp::{ErrorData as McpError, ServerHandler, tool, tool_handler, tool_router};
@@ -23,7 +23,7 @@ pub(super) struct AgentMcpServer {
 impl ServerHandler for AgentMcpServer {
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
-            .with_protocol_version(ProtocolVersion::V_2026_07_28)
+            .with_protocol_version(ProtocolVersion::LATEST)
             .with_instructions(
                 "Bento工具搜索引擎：先 search_tools 搜索，再 get_tool_schema 取 schema，最后 call_tool 调用"
                     .to_string(),

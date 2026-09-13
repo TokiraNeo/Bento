@@ -18,7 +18,7 @@ use bento_protocol::jsonrpc::templates::{
     TJsonRpcResponse, from_notification, from_request, into_response,
 };
 use bento_protocol::jsonrpc::{JsonRpcError, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse};
-use bento_protocol::versions::{BENTO_VERSION, MCP_PROTOCOL_VERSION};
+use bento_protocol::versions::BENTO_VERSION;
 use bento_protocol::{
     commands::{host_command, tool_command},
     dispatch::{InboundFrame, OutboundFrame, parse_frame},
@@ -345,7 +345,6 @@ async fn handle_host_hello(
                 id: rpc.id.clone(),
                 result: Some(HostWelcomeResult {
                     namespace,
-                    protocol_version: MCP_PROTOCOL_VERSION.into(),
                     bento_version: BENTO_VERSION.into(),
                 }),
                 error: None,

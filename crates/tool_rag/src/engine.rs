@@ -122,7 +122,7 @@ impl ToolRagEngine {
         }
     }
 
-    fn merge_snapshot(weak_self: Weak<Self>, mut receiver: mpsc::Receiver<()>) {
+    fn merge_snapshot(weak_self: Weak<Self>, receiver: mpsc::Receiver<()>) {
         while receiver.recv().is_ok() {
             // 将当前积压的触发全部处理
             while receiver.try_recv().is_ok() {}
@@ -146,7 +146,7 @@ impl ToolRagEngine {
         }
     }
 
-    fn merge_embedding(weak_self: Weak<Self>, mut receiver: mpsc::Receiver<Arc<SearchSnapshot>>) {
+    fn merge_embedding(weak_self: Weak<Self>, receiver: mpsc::Receiver<Arc<SearchSnapshot>>) {
         while let Ok(job) = receiver.recv() {
             {
                 let mut latest = job;

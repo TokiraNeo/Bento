@@ -18,7 +18,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HostWelcomeResult {
     pub namespace: String,
-    pub protocol_version: String,
     pub bento_version: String,
 }
 
