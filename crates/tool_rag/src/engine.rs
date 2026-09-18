@@ -5,8 +5,8 @@
  */
 use crate::catalog::{ToolBucket, ToolCatalog};
 use crate::config::ToolRagConfig;
+use crate::retrieve::semantic::{EmbedVector, SemanticEmbedder};
 use crate::snapshot::SearchSnapshot;
-use crate::{EmbedVector, Embedder};
 use bento_protocol::tool::{
     ToolDefinition, ToolRisk, ToolSchema, ToolSearchQuery, ToolSearchResult,
 };
@@ -22,12 +22,17 @@ pub struct ToolRagEngine {
     catalog: ToolCatalog,
     snapshot: RwLock<Arc<SearchSnapshot>>,
     snapshot_sender: mpsc::Sender<()>, // 通知重建快照
-    embedder: Option<Arc<dyn Embedder>>,
+    embedder: Option<Arc<SemanticEmbedder>>,
     embed_sender: mpsc::Sender<Arc<SearchSnapshot>>, // 重建语义向量库
 }
 
 impl ToolRagEngine {
-    pub fn new(config: &ToolRagConfig, embedder: Option<Arc<dyn Embedder>>) -> Arc<Self> {
+    pub fn new(config: &ToolRagConfig) -> Arc<Self> {
+        let embedder: Option<Arc<SemanticEmbedder>> = match SemanticEmbedder::new() {
+            Ok(s) => Some(Arc::new(s)),
+            Err(_) => None,
+        };
+
         let (snapshot_sender, snapshot_receiver) = mpsc::channel();
         let (embed_sender, embed_receiver) = mpsc::channel::<Arc<SearchSnapshot>>();
 

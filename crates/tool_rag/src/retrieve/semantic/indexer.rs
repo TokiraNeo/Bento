@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 use crate::model::{IndexedTool, SearchHit};
-use crate::{EmbedVector, SemanticRetrieveConfig};
+use crate::retrieve::semantic::{EmbedVector, SemanticRetrieveConfig};
 use bento_utility::maths::dot;
 use std::cmp::Ordering::Equal;
 use std::sync::{Arc, RwLock};

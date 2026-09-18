@@ -50,14 +50,14 @@ impl IndexedTool {
         }
     }
 
-    pub fn to_hit(&self) -> ToolSearchResult {
+    pub fn to_search_result(&self) -> ToolSearchResult {
         ToolSearchResult {
             qualified_name: format!("{}.{}", self.namespace, self.definition.name),
             description: self.definition.description.clone(),
         }
     }
 
-    pub fn search_fields(&self) -> SearchFields {
+    pub fn search_fields(&self) -> SearchFields<'_> {
         SearchFields {
             name: &self.definition.name,
             tags: &self.definition.tags,

@@ -8,7 +8,6 @@ mod approval;
 mod config;
 mod engine;
 mod event;
-mod semantic;
 mod sinks;
 
 pub use approval::{ToolApprovalHandler, ToolApprovalRequest};

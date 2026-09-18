@@ -11,8 +11,6 @@ use std::sync::{Arc, RwLock};
 
 #[derive(Clone)]
 pub(crate) struct ToolBucket {
-    pub host_name: String,
-    pub namespace: String,
     ready: bool,
     pub tools: Vec<Arc<IndexedTool>>,
 }
@@ -25,8 +23,6 @@ impl ToolBucket {
             .collect();
 
         Self {
-            host_name: host_name.to_owned(),
-            namespace: namespace.to_owned(),
             ready: false,
             tools,
         }

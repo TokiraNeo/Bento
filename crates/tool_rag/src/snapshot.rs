@@ -7,8 +7,8 @@ use crate::fusion::FusionScaler;
 use crate::model::{IndexedTool, ToolDocId};
 use crate::retrieve::exact::ExactIndexer;
 use crate::retrieve::lexical::LexicalIndexer;
-use crate::retrieve::semantic::SemanticIndexer;
-use crate::{EmbedVector, FusionConfig, ToolRagConfig};
+use crate::retrieve::semantic::{EmbedVector, SemanticIndexer};
+use crate::{FusionConfig, ToolRagConfig};
 use bento_protocol::tool::{ToolRisk, ToolSchema, ToolSearchResult};
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -107,12 +107,7 @@ impl SearchSnapshot {
 
             for hit in &hits {
                 if let Some(tool) = self.docs.get(hit.doc_id) {
-                    let def = &tool.definition;
-
-                    results.push(ToolSearchResult {
-                        qualified_name: format!("{}.{}", tool.namespace, def.name),
-                        description: def.description.clone(),
-                    });
+                    results.push(tool.to_search_result());
                 }
             }
 

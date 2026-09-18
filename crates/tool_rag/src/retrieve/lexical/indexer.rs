@@ -235,10 +235,6 @@ mod tests {
         LexicalIndexer::build(&docs, &config)
     }
 
-    fn index(docs: Vec<Arc<IndexedTool>>) -> LexicalIndexer {
-        index_with(docs, 5)
-    }
-
     fn docs() -> Vec<Arc<IndexedTool>> {
         vec![
             tool(

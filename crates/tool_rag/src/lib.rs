@@ -16,6 +16,4 @@ pub use config::ToolRagConfig;
 pub use engine::ToolRagEngine;
 pub use fusion::FusionConfig;
 pub use model::ToolDocField;
-pub use retrieve::{
-    EmbedVector, Embedder, ExactRetrieveConfig, LexicalRetrieveConfig, SemanticRetrieveConfig,
-};
+pub use retrieve::{ExactRetrieveConfig, LexicalRetrieveConfig, SemanticRetrieveConfig};

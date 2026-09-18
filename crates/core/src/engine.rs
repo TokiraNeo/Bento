@@ -15,8 +15,6 @@ use std::sync::Arc;
 use tokio::sync::broadcast;
 
 pub struct CoreEngine {
-    protocol_version: String,
-
     bus: Arc<CoreEventBus>,
 
     tool_engine: Arc<ToolRagEngine>,
@@ -26,7 +24,7 @@ pub struct CoreEngine {
 
 impl CoreEngine {
     pub fn new(config: CoreConfig, approval_handler: Arc<dyn ToolApprovalHandler>) -> Self {
-        let tool_engine = ToolRagEngine::new(&config.tool_rag, None);
+        let tool_engine = ToolRagEngine::new(&config.tool_rag);
 
         let tool_index_sink = Arc::new(RagIndexSink::new(tool_engine.clone()));
         let host_server = Arc::new(HostServer::new(&config.host_server, tool_index_sink));
@@ -39,7 +37,6 @@ impl CoreEngine {
         let agent_server = Arc::new(AgentServer::new(&config.agent_server, tool_query_sink));
 
         Self {
-            protocol_version: config.protocol_version,
             bus: Arc::new(CoreEventBus::new()),
             tool_engine,
             host_server,
