@@ -410,7 +410,7 @@ checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
 name = "bento_agent_server"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "async-trait",
  "axum",
@@ -424,7 +424,7 @@ dependencies = [
 
 [[package]]
 name = "bento_core"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "async-trait",
  "bento_agent_server",
@@ -439,7 +439,7 @@ dependencies = [
 
 [[package]]
 name = "bento_desktop"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "async-trait",
  "bento_core",
@@ -454,7 +454,7 @@ dependencies = [
 
 [[package]]
 name = "bento_host_server"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "async-trait",
  "bento_protocol",
@@ -470,7 +470,7 @@ dependencies = [
 
 [[package]]
 name = "bento_protocol"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -479,7 +479,7 @@ dependencies = [
 
 [[package]]
 name = "bento_tool_rag"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "bento_protocol",
  "bento_utility",
@@ -490,7 +490,7 @@ dependencies = [
 
 [[package]]
 name = "bento_utility"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "uuid",
 ]
